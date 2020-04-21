@@ -698,7 +698,7 @@ String rn2xx3::base16decode(const String &input_c)
     toDo[1] = input[i * 2 + 1];
     toDo[2] = '\0';
     int out = strtoul(toDo, 0, 16);
-    if ((out & 0xFF) == 0)
+    if ((out & 0xFF) != 0)
     {
       output += char(out);
     }
