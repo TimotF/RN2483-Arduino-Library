@@ -45,7 +45,7 @@ void rn2xx3::autobaud()
     _serial.println();
     // we could use sendRawCommand(F("sys get ver")); here
     _serial.println(F("sys get ver"));
-    response = _serial.readStringUntil('\n');
+    response = readStringUntil('\n');
   }
 }
 
@@ -157,6 +157,31 @@ bool rn2xx3::initP2P()
   return true;
 }
 
+int rn2xx3::timedRead()
+{
+    int c;
+    uint32_t startMillis = millis();
+    do {
+        c = _serial.read();
+        if(c >= 0) {
+            return c;
+        }
+        delay(1); /* RTOS delay */
+    } while(millis() - startMillis < _serial.getTimeout());
+    return -1;     // -1 indicates timeout
+}
+
+String rn2xx3::readStringUntil(char terminator)
+{
+    String ret;
+    int c = timedRead();
+    while(c >= 0 && c != terminator) {
+        ret += (char) c;
+        c = timedRead();
+    }
+    return ret;
+}
+
 TX_RETURN_TYPE rn2xx3::listenP2P()
 {
   String receivedData;
@@ -165,7 +190,7 @@ TX_RETURN_TYPE rn2xx3::listenP2P()
   receivedData = sendRawCommand(F("radio rx 0")); // don't put this in receiveddata we want to ignore the first ok
   while (!mustStop)
   {
-    receivedData = _serial.readStringUntil('\n');
+    receivedData = readStringUntil('\n');
     if (receivedData.length() > 0)
       LOG("received data : %s", receivedData.c_str());
     if (receivedData.startsWith("radio_err"))
@@ -284,7 +309,7 @@ bool rn2xx3::initOTAA(const String &AppEUI, const String &AppKey, const String &
   {
     sendRawCommand(F("mac join otaa"));
     // Parse 2nd response
-    receivedData = _serial.readStringUntil('\n');
+    receivedData = readStringUntil('\n');
 
     if (receivedData.startsWith(F("accepted")))
     {
@@ -390,7 +415,7 @@ bool rn2xx3::initABP(const String &devAddr, const String &AppSKey, const String 
   _serial.setTimeout(60000);
   sendRawCommand(F("mac save"));
   sendRawCommand(F("mac join abp"));
-  receivedData = _serial.readStringUntil('\n');
+  receivedData = readStringUntil('\n');
 
   _serial.setTimeout(2000);
   delay(1000);
@@ -475,7 +500,7 @@ TX_RETURN_TYPE rn2xx3::txCommand(const String &command, const String &data, bool
     }
     _serial.println();
 
-    String receivedData = _serial.readStringUntil('\n');
+    String receivedData = readStringUntil('\n');
     LOG("received %s", receivedData.c_str());
 
     switch (determineReceivedDataType(receivedData))
@@ -483,7 +508,7 @@ TX_RETURN_TYPE rn2xx3::txCommand(const String &command, const String &data, bool
     case rn2xx3::ok:
     {
       _serial.setTimeout(30000);
-      receivedData = _serial.readStringUntil('\n');
+      receivedData = readStringUntil('\n');
       _serial.setTimeout(2000);
 
       LOG("ok -> received %s", receivedData.c_str());
@@ -727,7 +752,7 @@ String rn2xx3::sendRawCommand(const String &command)
     _serial.read();
   _serial.println(command);
 
-  String ret = _serial.readStringUntil('\n');
+  String ret = readStringUntil('\n');
   ret.trim();
 
   if (ret.equals(F("invalid_param")))
