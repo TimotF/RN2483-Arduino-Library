@@ -27,6 +27,7 @@ public:
 
     Packet(size_t dataSize = 0, uint8_t *data = NULL, uint8_t *header = NULL)
     {
+        Serial.println("pkt constructor");
         _dataSize = dataSize;
         _pktSize = _dataSize + _headerSize;
         _pkt = new uint8_t[_pktSize];
@@ -38,9 +39,23 @@ public:
         }
         if (header != NULL)
             memcpy(_header, header, _headerSize);
+        else{
+            memset(_header,0,_headerSize);
+        }
     }
+    Packet(const Packet &pkt){
+        Serial.println("pkt copy constructor");
+        _dataSize = pkt._dataSize;
+        _pktSize = pkt._pktSize;
+        _pkt = new uint8_t[_pktSize];
+        _header = _pkt;
+        _data = _header + _headerSize;
+        memcpy(_pkt, pkt._pkt, _pktSize);
+    }
+
     ~Packet()
     {
+        Serial.println("pkt destructor");
         delete[] _pkt;
     }
 
@@ -55,7 +70,7 @@ public:
     size_t getPktSize() { return _pktSize; }
     size_t getHeaderSize() { return _headerSize; }
     size_t getDataSize() { return _dataSize; }
-    bool isSplit() { return _header[0] & 0x08 > 0; }
+    bool isSplit() { return (_header[0] & 0x08) > 0; }
     uint8_t getSourceID() { return _header[2]; }
     uint8_t getDestID() { return _header[3]; }
     uint8_t getPktNumber() { return _header[4]; }
