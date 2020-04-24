@@ -8,7 +8,8 @@ class Packet
 public:
     enum PROTOCOL_VERSION
     {
-        VERSION_1 = 0
+        VERSION_1 = 0,
+        VERSION_8 = 7
     };
 
     enum QoS

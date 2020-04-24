@@ -20,11 +20,11 @@ void Packet::setQoS(QoS qos)
 void Packet::setSplit(bool split)
 {
     _header[0] &= 0xF7;
-    _header[0] &= ((split & 0x01) << 3);
+    _header[0] |= ((split & 0x01) << 3);
 }
 
 void Packet::setType(PACKET_TYPE type)
 {
-    _header[0] &= 0x07;
+    _header[0] &= 0xF8;
     _header[0] |= type & 0x07;
 }
