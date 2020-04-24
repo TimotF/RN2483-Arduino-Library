@@ -25,22 +25,35 @@ public:
         NACK = 3
     };
 
-    Packet(size_t dataSize = 0, uint8_t *data = NULL);
-    ~Packet();
+    Packet(size_t dataSize = 0, uint8_t *data = NULL)
+    {
+        _dataSize = dataSize;
+        _pktSize = _dataSize + _headerSize;
+        _pkt = new uint8_t[_pktSize];
+        _header = _pkt;
+        _data = _header + _headerSize;
+        if (_dataSize > 0)
+        {
+            memcpy(_data, data, _dataSize);
+        }
+    }
+    ~Packet(){
+        delete [] _pkt;
+    }
 
     bool parse(size_t pkt_size, uint8_t *packet);
-    bool attachData(size_t dataSize, uint8_t *data);
-    uint8_t *get();
+    uint8_t *get() { return _pkt;}
 
-    PROTOCOL_VERSION getProtocolVersion();
-    QoS getQoS();
-    PACKET_TYPE getType();
-    size_t getPktSize();
-    size_t getHeaderSize();
-    size_t getDataSize();
-    bool isSplit();
-    uint8_t getSourceID();
-    uint8_t getDestID();
+    PROTOCOL_VERSION getProtocolVersion(){return (PROTOCOL_VERSION)((_header[0]&0xE0)>>5);}
+    QoS getQoS(){return (QoS)((_header[0]&10)>>4);}
+    PACKET_TYPE getType(){return (PACKET_TYPE)(_header[0]&0x07);}
+    size_t getPktSize() { return _pktSize; }
+    size_t getHeaderSize() { return _headerSize; }
+    size_t getDataSize() { return _dataSize; }
+    bool isSplit(){return _header[0]&0x08 > 0;}
+    uint8_t getSourceID() { return _header[2];}
+    uint8_t getDestID() { return _header[3];}
+    uint8_t getPktNumber() { return _header[4];}
 
     bool setProtocolVersion(PROTOCOL_VERSION version);
     bool setQoS(QoS qos);
@@ -51,11 +64,16 @@ public:
 
 private:
     uint8_t *_pkt;
-    size_t _pktSize;
-    uint8_t *_header;
-    size_t _headerSize;
+    size_t _pktSize = 0;
+    /* header : protocol_version (3), QoS (1), pktSplit (1), pktType (3), 
+    futurUse (8), 
+    source dev ID (8), 
+    dest dev ID (8), 
+    pktNumber (8) */
+    uint8_t *_header; 
+    const size_t _headerSize = 5;
     uint8_t *_data;
-    size_t _dataSize;
+    size_t _dataSize = 0;
 };
 
 #endif
