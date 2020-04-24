@@ -25,24 +25,26 @@ public:
         NACK = 3
     };
 
-    Packet(size_t dataSize = 0, uint8_t *data = NULL)
+    Packet(size_t dataSize = 0, uint8_t *data = NULL, uint8_t *header = NULL)
     {
         _dataSize = dataSize;
         _pktSize = _dataSize + _headerSize;
         _pkt = new uint8_t[_pktSize];
         _header = _pkt;
         _data = _header + _headerSize;
-        if (_dataSize > 0)
+        if (_dataSize > 0 && data != NULL)
         {
             memcpy(_data, data, _dataSize);
         }
+        if (header != NULL)
+            memcpy(_header, header, _headerSize);
     }
     ~Packet()
     {
         delete[] _pkt;
     }
 
-    bool parse(size_t pkt_size, uint8_t *packet);
+
     uint8_t *get() { return _pkt; }
     uint8_t *getData() { return _data; }
     uint8_t *getHeader() { return _header; }
