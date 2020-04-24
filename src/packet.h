@@ -37,23 +37,26 @@ public:
             memcpy(_data, data, _dataSize);
         }
     }
-    ~Packet(){
-        delete [] _pkt;
+    ~Packet()
+    {
+        delete[] _pkt;
     }
 
     bool parse(size_t pkt_size, uint8_t *packet);
-    uint8_t *get() { return _pkt;}
+    uint8_t *get() { return _pkt; }
+    uint8_t *getData() { return _data; }
+    uint8_t *getHeader() { return _header; }
 
-    PROTOCOL_VERSION getProtocolVersion(){return (PROTOCOL_VERSION)((_header[0]&0xE0)>>5);}
-    QoS getQoS(){return (QoS)((_header[0]&10)>>4);}
-    PACKET_TYPE getType(){return (PACKET_TYPE)(_header[0]&0x07);}
+    PROTOCOL_VERSION getProtocolVersion() { return (PROTOCOL_VERSION)((_header[0] & 0xE0) >> 5); }
+    QoS getQoS() { return (QoS)((_header[0] & 10) >> 4); }
+    PACKET_TYPE getType() { return (PACKET_TYPE)(_header[0] & 0x07); }
     size_t getPktSize() { return _pktSize; }
     size_t getHeaderSize() { return _headerSize; }
     size_t getDataSize() { return _dataSize; }
-    bool isSplit(){return _header[0]&0x08 > 0;}
-    uint8_t getSourceID() { return _header[2];}
-    uint8_t getDestID() { return _header[3];}
-    uint8_t getPktNumber() { return _header[4];}
+    bool isSplit() { return _header[0] & 0x08 > 0; }
+    uint8_t getSourceID() { return _header[2]; }
+    uint8_t getDestID() { return _header[3]; }
+    uint8_t getPktNumber() { return _header[4]; }
 
     bool setProtocolVersion(PROTOCOL_VERSION version);
     bool setQoS(QoS qos);
@@ -70,7 +73,7 @@ private:
     source dev ID (8), 
     dest dev ID (8), 
     pktNumber (8) */
-    uint8_t *_header; 
+    uint8_t *_header;
     const size_t _headerSize = 5;
     uint8_t *_data;
     size_t _dataSize = 0;
