@@ -58,12 +58,13 @@ public:
     uint8_t getDestID() { return _header[3]; }
     uint8_t getPktNumber() { return _header[4]; }
 
-    bool setProtocolVersion(PROTOCOL_VERSION version);
-    bool setQoS(QoS qos);
-    bool setType(PACKET_TYPE type);
-    bool setSourceID(uint8_t id);
-    bool setDestID(uint8_t id);
-    bool setSplit(bool split);
+    void setProtocolVersion(PROTOCOL_VERSION version);
+    void setQoS(QoS qos);
+    void setType(PACKET_TYPE type);
+    void setSplit(bool split);
+    void setSourceID(uint8_t id) { _header[2] = id; }
+    void setDestID(uint8_t id) { _header[3] = id; }
+    void setPktNumber(uint8_t nb) { _header[4] = nb; }
 
 private:
     uint8_t *_pkt;
