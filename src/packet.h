@@ -65,7 +65,7 @@ public:
     uint8_t *getHeader() { return _header; }
 
     PROTOCOL_VERSION getProtocolVersion() { return (PROTOCOL_VERSION)((_header[0] & 0xE0) >> 5); }
-    QoS getQoS() { return (QoS)((_header[0] & 10) >> 4); }
+    QoS getQoS() { return (QoS)((_header[0] & 0x10) >> 4); }
     PACKET_TYPE getType() { return (PACKET_TYPE)(_header[0] & 0x07); }
     size_t getPktSize() { return _pktSize; }
     size_t getHeaderSize() { return _headerSize; }
