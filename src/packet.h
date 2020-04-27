@@ -26,7 +26,7 @@ public:
         NACK = 3
     };
 
-    Packet(size_t dataSize = 0, uint8_t *data = NULL, uint8_t *header = NULL)
+    Packet(size_t dataSize = 0, const uint8_t *data = NULL, uint8_t *header = NULL)
     {
         Serial.println("pkt constructor");
         _dataSize = dataSize;
@@ -59,6 +59,8 @@ public:
         Serial.println("pkt destructor");
         delete[] _pkt;
     }
+
+    Packet& operator=(const Packet& pkt);
 
 
     uint8_t *get() { return _pkt; }
@@ -93,7 +95,7 @@ private:
     dest dev ID (8), 
     pktNumber (8) */
     uint8_t *_header;
-    const size_t _headerSize = 5;
+    static const size_t _headerSize;
     uint8_t *_data;
     size_t _dataSize = 0;
 };
