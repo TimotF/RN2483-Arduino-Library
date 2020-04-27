@@ -57,7 +57,7 @@ void LoRa::loop()
         case TX_SUCCESS:
         {
             _packetsQueue.erase(_packetsQueue.begin());
-            delay(200);
+            delay(10);
             break;
         }
         default:
