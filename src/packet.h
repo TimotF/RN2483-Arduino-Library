@@ -57,7 +57,10 @@ public:
     }
     Packet(const Packet &pkt)
     {
-        _sent = false;
+        _sent = pkt._sent;
+        _timeout = pkt._timeout;
+        _sentTimestamp = pkt._sentTimestamp;
+        _maxRetry = pkt._maxRetry;
         _dataSize = pkt._dataSize;
         _pktSize = pkt._pktSize;
         _pkt = new uint8_t[_pktSize];
@@ -89,7 +92,10 @@ public:
     uint8_t getSourceID() { return _header[2]; }
     uint8_t getDestID() { return _header[3]; }
     uint8_t getPktNumber() { return _header[4]; }
-    bool isSent() { return _sent; }
+    uint8_t getSent() { return _sent; }
+    uint8_t getMaxRetry() { return _maxRetry; }
+    uint32_t getSentTimestamp() { return _sentTimestamp; }
+    uint32_t getTimeout() { return _timeout; }
 
     void setProtocolVersion(PROTOCOL_VERSION version);
     void setQoS(QoS qos);
@@ -98,7 +104,7 @@ public:
     void setSourceID(uint8_t id) { _header[2] = id; }
     void setDestID(uint8_t id) { _header[3] = id; }
     void setPktNumber(uint8_t nb) { _header[4] = nb; }
-    void setSent(bool sent) { _sent = sent; }
+    void hasJustBeenSent();
 
 private:
     uint8_t *_pkt;
@@ -112,7 +118,10 @@ private:
     static const size_t _headerSize;
     uint8_t *_data;
     size_t _dataSize = 0;
-    bool _sent = false;
+    uint32_t _timeout = 30000;   /* if no ack received during this time, then the packet is resent */
+    uint32_t _sentTimestamp = 0; /* timestamp of the time that the packet was sent */
+    uint8_t _sent = 0;           /* The number of times the packet was sent */
+    uint8_t _maxRetry = 5;       /* The maximum number of times a packet is sent before dropping it */
 };
 
 #endif

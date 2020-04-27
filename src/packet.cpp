@@ -33,6 +33,10 @@ void Packet::setType(PACKET_TYPE type)
 
 Packet &Packet::operator=(const Packet &pkt)
 {
+    _sent = pkt._sent;
+    _timeout = pkt._timeout;
+    _sentTimestamp = pkt._sentTimestamp;
+    _maxRetry = pkt._maxRetry;
     _dataSize = pkt._dataSize;
     _pktSize = pkt._pktSize;
     delete[] _pkt;
@@ -49,7 +53,7 @@ Packet Packet::buildPktFromBase16str(const String &s)
     input.trim();
     const size_t inputLength = input.length();
     const size_t outputLength = inputLength / 2;
-    if (outputLength <= _headerSize)    /* This is not a packet if the size is not even greater than the header size*/
+    if (outputLength <= _headerSize) /* This is not a packet if the size is not even greater than the header size*/
         return Packet();
 
     Packet output(outputLength);
@@ -66,4 +70,10 @@ Packet Packet::buildPktFromBase16str(const String &s)
     }
 
     return output;
+}
+
+void Packet::hasJustBeenSent()
+{
+    _sent++;
+    _sentTimestamp = millis();
 }
