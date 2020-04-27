@@ -36,6 +36,7 @@ Packet &Packet::operator=(const Packet &pkt)
     Serial.println("operator=");
     _dataSize = pkt._dataSize;
     _pktSize = pkt._pktSize;
+    delete[] _pkt;
     _pkt = new uint8_t[_pktSize];
     _header = _pkt;
     _data = _header + _headerSize;
