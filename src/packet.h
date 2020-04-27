@@ -28,6 +28,7 @@ public:
 
     Packet(size_t dataSize = 0, const uint8_t *data = NULL, bool dataContainsHeader = false)
     {
+        _sent = false;
         if (dataContainsHeader && (dataSize >= _headerSize))
         {
             _pktSize = dataSize;
@@ -56,6 +57,7 @@ public:
     }
     Packet(const Packet &pkt)
     {
+        _sent = false;
         _dataSize = pkt._dataSize;
         _pktSize = pkt._pktSize;
         _pkt = new uint8_t[_pktSize];
@@ -65,7 +67,6 @@ public:
     }
 
     static Packet buildPktFromBase16str(const String &s);
-
 
     ~Packet()
     {
@@ -88,6 +89,7 @@ public:
     uint8_t getSourceID() { return _header[2]; }
     uint8_t getDestID() { return _header[3]; }
     uint8_t getPktNumber() { return _header[4]; }
+    bool isSent() { return _sent; }
 
     void setProtocolVersion(PROTOCOL_VERSION version);
     void setQoS(QoS qos);
@@ -96,6 +98,7 @@ public:
     void setSourceID(uint8_t id) { _header[2] = id; }
     void setDestID(uint8_t id) { _header[3] = id; }
     void setPktNumber(uint8_t nb) { _header[4] = nb; }
+    void setSent(bool sent) { _sent = sent; }
 
 private:
     uint8_t *_pkt;
@@ -109,6 +112,7 @@ private:
     static const size_t _headerSize;
     uint8_t *_data;
     size_t _dataSize = 0;
+    bool _sent = false;
 };
 
 #endif
