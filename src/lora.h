@@ -5,14 +5,6 @@
 #include "freertos/ringbuf.h"
 #include "packet.h"
 
-#define LOG(f_, ...)                              \
-    {                                             \
-        Serial.printf("[LoRa] [%ld] ", millis()); \
-        Serial.printf((f_), ##__VA_ARGS__);       \
-        Serial.printf("\n");                      \
-    }
-
-
 
 class LoRa
 {
@@ -20,25 +12,23 @@ public:
     LoRa(Stream &serial, const bool &useP2P = false) : _lora(serial)
     {
         init(useP2P);
-        _bufHandle = xRingbufferCreate(1028, RINGBUF_TYPE_ALLOWSPLIT);
-        if (_bufHandle == NULL)
-        {
-            LOG("Failed to create ring buffer\n");
-        }
     }
     bool init(const bool &useP2P);
-    bool sendData(uint8_t *, bool ack = false);
+    bool sendData(const uint8_t *data, uint16_t dataSize, bool ack = false);
     bool receivedData();
     void loop();
+    void printPkt(Packet &pkt);
     //TODO : implement callback for received packets
 
 private:
+    static const uint8_t _maxPktSize = 235;
+    static uint8_t _pktCounter;
     bool _useP2P = false;
     rn2xx3 _lora;
-    RingbufHandle_t _bufHandle;
+    std::vector<Packet> _packetsQueue;
     // TODO : 2 queues de packets, 1 pour le RX, 1 pour le TX
 
-    bool sendPktToBuf(const Packet &pkt);
+    bool formatData(const uint8_t *data, uint16_t dataSize);
 };
 
 #endif
