@@ -39,31 +39,83 @@ void LoRa::loop()
 {
     if (_packetsQueue.size() > 0) /* if needs to send data */
     {
-        if (_rxListening)
+        // Packet pkt = _packetsQueue[0];
+        Packet pkt;
+        bool hasToSendPkt = false;
+        for (auto p : _packetsQueue)
         {
-            _rxListening = false;
-            _lora.stopPassiveRxP2P();
+            if (p.getSent())
+            {
+                if (millis() - p.getSentTimestamp() < p.getTimeout())
+                {
+                    continue;
+                }
+                else /* timeout ! */
+                {
+                    if (p.getSent() > p.getMaxRetry()) /* Too many retries, dropping packet */
+                    {
+                        //TODO : cannot drop packet from inside the loop!
+                    }
+                    else
+                    {
+                        pkt = p;
+                        hasToSendPkt = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                pkt = p;
+                hasToSendPkt = true;
+                break;
+            }
         }
-        Packet pkt = _packetsQueue[0];
-        LOG("Sending packet %d", pkt.getPktNumber());
-        TX_RETURN_TYPE ret = _lora.txBytes(pkt.get(), pkt.getPktSize());
-        switch (ret)
+        if (hasToSendPkt)
         {
-        case TX_FAIL:
-        {
-            init(_useP2P);
-            break;
-        }
-        case TX_SUCCESS:
-        {
-            _packetsQueue.erase(_packetsQueue.begin());
-            delay(10);
-            break;
-        }
-        default:
-        {
-            LOG("WTF! received code %d", ret);
-        }
+            if (_rxListening)
+            {
+                _rxListening = false;
+                _lora.stopPassiveRxP2P();
+                LOG("Sending packet %d", pkt.getPktNumber());
+                TX_RETURN_TYPE ret = _lora.txBytes(pkt.get(), pkt.getPktSize());
+                switch (ret)
+                {
+                case TX_FAIL:
+                {
+                    init(_useP2P);
+                    break;
+                }
+                case TX_SUCCESS:
+                {
+                    switch (pkt.getQoS())
+                    {
+                    case Packet::ONE_PACKET_AT_MOST:
+                    {
+                        _packetsQueue.erase(_packetsQueue.begin()); //TODO may not be the first pkt in the queue !
+                        break;
+                    }
+                    case Packet::AT_LEAST_ONE_PACKET:
+                    {
+                        pkt.hasJustBeenSent();
+                        break;
+                    }
+                    default:
+                    {
+                        LOG("WTF! QoS is unknown!!");
+                        break;
+                    }
+                    }
+
+                    delay(10);
+                    break;
+                }
+                default:
+                {
+                    LOG("WTF! received code %d", ret);
+                }
+                }
+            }
         }
     }
     else /* Rx mode */
