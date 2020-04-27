@@ -25,6 +25,7 @@ private:
     static uint8_t _pktCounter;
     bool _useP2P = false;
     rn2xx3 _lora;
+    bool _rxListening = false;
     std::vector<Packet> _packetsQueue;
     // TODO : 2 queues de packets, 1 pour le RX, 1 pour le TX
 

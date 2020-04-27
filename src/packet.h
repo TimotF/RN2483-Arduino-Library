@@ -26,26 +26,36 @@ public:
         NACK = 3
     };
 
-    Packet(size_t dataSize = 0, const uint8_t *data = NULL, uint8_t *header = NULL)
+    Packet(size_t dataSize = 0, const uint8_t *data = NULL, bool dataContainsHeader = false)
     {
-        Serial.println("pkt constructor");
-        _dataSize = dataSize;
-        _pktSize = _dataSize + _headerSize;
-        _pkt = new uint8_t[_pktSize];
-        _header = _pkt;
-        _data = _header + _headerSize;
-        if (_dataSize > 0 && data != NULL)
+        if (dataContainsHeader && (dataSize >= _headerSize))
         {
-            memcpy(_data, data, _dataSize);
+            _pktSize = dataSize;
+            _dataSize = dataSize - _headerSize;
+            _pkt = new uint8_t[_pktSize];
+            _header = _pkt;
+            _data = _header + _headerSize;
+            if (data != NULL)
+            {
+                memcpy(_pkt, data, _pktSize);
+            }
         }
-        if (header != NULL)
-            memcpy(_header, header, _headerSize);
-        else{
-            memset(_header,0,_headerSize);
+        else
+        {
+            _dataSize = dataSize;
+            _pktSize = _dataSize + _headerSize;
+            _pkt = new uint8_t[_pktSize];
+            _header = _pkt;
+            _data = _header + _headerSize;
+            if (_dataSize > 0 && data != NULL)
+            {
+                memcpy(_data, data, _dataSize);
+            }
+            memset(_header, 0, _headerSize);
         }
     }
-    Packet(const Packet &pkt){
-        Serial.println("pkt copy constructor");
+    Packet(const Packet &pkt)
+    {
         _dataSize = pkt._dataSize;
         _pktSize = pkt._pktSize;
         _pkt = new uint8_t[_pktSize];
@@ -54,14 +64,15 @@ public:
         memcpy(_pkt, pkt._pkt, _pktSize);
     }
 
+    static Packet buildPktFromBase16str(const String &s);
+
+
     ~Packet()
     {
-        Serial.println("pkt destructor");
         delete[] _pkt;
     }
 
-    Packet& operator=(const Packet& pkt);
-
+    Packet &operator=(const Packet &pkt);
 
     uint8_t *get() { return _pkt; }
     uint8_t *getData() { return _data; }

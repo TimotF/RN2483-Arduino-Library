@@ -33,7 +33,6 @@ void Packet::setType(PACKET_TYPE type)
 
 Packet &Packet::operator=(const Packet &pkt)
 {
-    Serial.println("operator=");
     _dataSize = pkt._dataSize;
     _pktSize = pkt._pktSize;
     delete[] _pkt;
@@ -42,4 +41,29 @@ Packet &Packet::operator=(const Packet &pkt)
     _data = _header + _headerSize;
     memcpy(_pkt, pkt._pkt, _pktSize);
     return *this;
+}
+
+Packet Packet::buildPktFromBase16str(const String &s)
+{
+    String input(s); // Make a deep copy to be able to do trim()
+    input.trim();
+    const size_t inputLength = input.length();
+    const size_t outputLength = inputLength / 2;
+    if (outputLength <= _headerSize)    /* This is not a packet if the size is not even greater than the header size*/
+        return Packet();
+
+    Packet output(outputLength);
+    uint8_t *outputPtr = output.get();
+
+    for (size_t i = 0; i < outputLength; ++i)
+    {
+        char toDo[3];
+        toDo[0] = input[i * 2];
+        toDo[1] = input[i * 2 + 1];
+        toDo[2] = '\0';
+        int out = strtoul(toDo, 0, 16);
+        outputPtr[i] = uint8_t(out);
+    }
+
+    return output;
 }

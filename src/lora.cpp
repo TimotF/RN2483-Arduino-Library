@@ -37,12 +37,75 @@ bool LoRa::receivedData()
 
 void LoRa::loop()
 {
-    if (_packetsQueue.size() > 0)
+    if (_packetsQueue.size() > 0) /* if needs to send data */
     {
+        if (_rxListening)
+        {
+            _rxListening = false;
+            _lora.stopPassiveRxP2P();
+        }
         Packet pkt = _packetsQueue[0];
         LOG("Sending packet %d", pkt.getPktNumber());
-        _lora.txBytes(pkt.get(), pkt.getPktSize());
-        _packetsQueue.erase(_packetsQueue.begin());
+        TX_RETURN_TYPE ret = _lora.txBytes(pkt.get(), pkt.getPktSize());
+        switch (ret)
+        {
+        case TX_FAIL:
+        {
+            init(_useP2P);
+            break;
+        }
+        case TX_SUCCESS:
+        {
+            _packetsQueue.erase(_packetsQueue.begin());
+            break;
+        }
+        default:
+        {
+            LOG("WTF! received code %d", ret);
+        }
+        }
+    }
+    else /* Rx mode */
+    {
+        if (!_rxListening)
+        {
+            _rxListening = true;
+            _lora.setPassiveRxP2P();
+        }
+        TX_RETURN_TYPE ret = _lora.listenLoop();
+        switch (ret)
+        {
+        case TX_WITH_RX: /* received a message */
+        {
+            String received = _lora.getRx(); /* get received msg */
+            _lora.setPassiveRxP2P();         /* go back into rx mode */
+                                             /* process received msg */
+            Packet pkt = Packet::buildPktFromBase16str(received);
+            printPkt(pkt);
+
+            break;
+        }
+        case RADIO_LISTEN_WITHOUT_RX: /* timeout */
+        {
+            _lora.setPassiveRxP2P();
+            break;
+        }
+        case NO_EVENT: /* nothing happened */
+        {
+            break;
+        }
+        case UNKNOWN_MSG: /* received a message */
+        {
+            _lora.setPassiveRxP2P();
+            break;
+        }
+        default: /* should never get inside */
+        {
+            LOG("WTF??")
+            _lora.setPassiveRxP2P();
+            break;
+        }
+        }
     }
 }
 

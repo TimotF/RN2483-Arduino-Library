@@ -159,27 +159,96 @@ bool rn2xx3::initP2P()
 
 int rn2xx3::timedRead()
 {
-    int c;
-    uint32_t startMillis = millis();
-    do {
-        c = _serial.read();
-        if(c >= 0) {
-            return c;
-        }
-        delay(1); /* RTOS delay */
-    } while(millis() - startMillis < _serial.getTimeout());
-    return -1;     // -1 indicates timeout
+  int c;
+  uint32_t startMillis = millis();
+  do
+  {
+    c = _serial.read();
+    if (c >= 0)
+    {
+      return c;
+    }
+    delay(1); /* RTOS delay */
+  } while (millis() - startMillis < _serial.getTimeout());
+  return -1; // -1 indicates timeout
 }
 
 String rn2xx3::readStringUntil(char terminator)
 {
-    String ret;
-    int c = timedRead();
-    while(c >= 0 && c != terminator) {
-        ret += (char) c;
-        c = timedRead();
-    }
-    return ret;
+  String ret;
+  int c = timedRead();
+  while (c >= 0 && c != terminator)
+  {
+    ret += (char)c;
+    c = timedRead();
+  }
+  return ret;
+}
+
+bool rn2xx3::setPassiveRxP2P()
+{
+  String receivedData;
+  LOG("Listening for incoming messages...");
+  receivedData = sendRawCommand(F("radio rx 0"));
+  if (receivedData.startsWith("ok"))
+  {
+    LOG("Module listening");
+    return true;
+  }
+  else
+  {
+    LOG("Error, received %s", receivedData.c_str());
+    return false;
+  }
+}
+
+bool rn2xx3::stopPassiveRxP2P()
+{
+  String receivedData;
+  LOG("Stopping Rx listening...");
+  receivedData = sendRawCommand(F("radio rxstop"));
+  if (receivedData.startsWith("ok"))
+  {
+    LOG("OK");
+    return true;
+  }
+  else
+  {
+    LOG("Error, received %s", receivedData.c_str());
+    return false;
+  }
+}
+
+TX_RETURN_TYPE rn2xx3::listenLoop()
+{
+  if (_serial.available() == 0)
+  {
+    return NO_EVENT;
+  }
+
+  String receivedData = readStringUntil('\n');
+
+  if (receivedData.length() > 0)
+    LOG("received data : %s", receivedData.c_str());
+
+  if (receivedData.startsWith("radio_err"))
+  {
+    return RADIO_LISTEN_WITHOUT_RX; // timeout
+  }
+  else if (receivedData.startsWith("busy"))
+  {
+    // just wait
+  }
+  else if (receivedData.startsWith("radio_rx"))
+  {
+    //example: radio_rx 54657374696E6720313233
+    _rxMessenge = receivedData.substring(receivedData.indexOf(' ', 1) + 1);
+
+    return TX_WITH_RX;
+  }
+
+  LOG("UNKNOWN msg : %s", receivedData.c_str());
+  return UNKNOWN_MSG;
 }
 
 TX_RETURN_TYPE rn2xx3::listenP2P()
@@ -209,6 +278,8 @@ TX_RETURN_TYPE rn2xx3::listenP2P()
       return TX_WITH_RX;
     }
   }
+  LOG("UNKNOWN msg : %s", receivedData.c_str());
+  return UNKNOWN_MSG;
 }
 
 bool rn2xx3::initOTAA(const String &AppEUI, const String &AppKey, const String &DevEUI)
