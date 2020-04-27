@@ -57,6 +57,7 @@ void LoRa::loop()
         case TX_SUCCESS:
         {
             _packetsQueue.erase(_packetsQueue.begin());
+            delay(200);
             break;
         }
         default:
@@ -79,7 +80,7 @@ void LoRa::loop()
         {
             String received = _lora.getRx(); /* get received msg */
             _lora.setPassiveRxP2P();         /* go back into rx mode */
-                                             /* process received msg */
+                                             /* Then, process received msg */
             Packet pkt = Packet::buildPktFromBase16str(received);
             printPkt(pkt);
 
