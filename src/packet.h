@@ -23,7 +23,7 @@ public:
         DISCOVER = 0,
         OTA = 1,
         DATA = 2,
-        NACK = 3
+        ACK = 3
     };
 
     Packet(size_t dataSize = 0, const uint8_t *data = NULL, bool dataContainsHeader = false)

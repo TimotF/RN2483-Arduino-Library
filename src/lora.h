@@ -5,7 +5,6 @@
 #include "freertos/ringbuf.h"
 #include "packet.h"
 
-
 class LoRa
 {
 public:
@@ -18,6 +17,7 @@ public:
     bool receivedData();
     void loop();
     void printPkt(Packet &pkt);
+    int getNbPktInQueue() { return _packetsQueue.size(); }
     //TODO : implement callback for received packets
 
 private:
@@ -29,8 +29,9 @@ private:
     std::vector<Packet> _packetsQueue;
     // TODO : 2 queues de packets, 1 pour le RX, 1 pour le TX
 
-    bool formatData(const uint8_t *data, uint16_t dataSize);
-    bool removePkt(Packet &pkt);
+    bool formatData(const uint8_t *data, uint16_t dataSize, bool ack);
+    void createACK(const uint8_t pktNb);
+    bool removePkt(uint8_t pktNb);
 };
 
 #endif

@@ -1,5 +1,12 @@
 #include "packet.h"
 
+#define LOG(f_, ...)                              \
+    {                                             \
+        Serial.printf("[Packet] [%ld] ", millis()); \
+        Serial.printf((f_), ##__VA_ARGS__);       \
+        Serial.printf("\n");                      \
+    }
+
 const size_t Packet::_headerSize = 5;
 
 /* header : protocol_version (3), QoS (1), pktSplit (1), pktType (3), 
@@ -75,5 +82,6 @@ Packet Packet::buildPktFromBase16str(const String &s)
 void Packet::hasJustBeenSent()
 {
     _sent++;
+    LOG("pkt was sent %d times",_sent);
     _sentTimestamp = millis();
 }
