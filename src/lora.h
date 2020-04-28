@@ -30,6 +30,7 @@ private:
     // TODO : 2 queues de packets, 1 pour le RX, 1 pour le TX
 
     bool formatData(const uint8_t *data, uint16_t dataSize);
+    bool removePkt(Packet &pkt);
 };
 
 #endif

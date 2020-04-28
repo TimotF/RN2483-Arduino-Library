@@ -54,10 +54,13 @@ void LoRa::loop()
                 {
                     if (p.getSent() > p.getMaxRetry()) /* Too many retries, dropping packet */
                     {
-                        //TODO : cannot drop packet from inside the loop!
+                        LOG("Too many retries, dropping pkt %d",p.getPktNumber());
+                        removePkt(p);
+                        break;
                     }
                     else
                     {
+                        LOG("No ack, retry sending pkt %d",p.getPktNumber());
                         pkt = p;
                         hasToSendPkt = true;
                         break;
@@ -77,44 +80,44 @@ void LoRa::loop()
             {
                 _rxListening = false;
                 _lora.stopPassiveRxP2P();
-                LOG("Sending packet %d", pkt.getPktNumber());
-                TX_RETURN_TYPE ret = _lora.txBytes(pkt.get(), pkt.getPktSize());
-                switch (ret)
+            }
+            LOG("Sending packet %d", pkt.getPktNumber());
+            TX_RETURN_TYPE ret = _lora.txBytes(pkt.get(), pkt.getPktSize());
+            switch (ret)
+            {
+            case TX_FAIL:
+            {
+                init(_useP2P);
+                break;
+            }
+            case TX_SUCCESS:
+            {
+                switch (pkt.getQoS())
                 {
-                case TX_FAIL:
+                case Packet::ONE_PACKET_AT_MOST:
                 {
-                    init(_useP2P);
+                    removePkt(pkt);
                     break;
                 }
-                case TX_SUCCESS:
+                case Packet::AT_LEAST_ONE_PACKET:
                 {
-                    switch (pkt.getQoS())
-                    {
-                    case Packet::ONE_PACKET_AT_MOST:
-                    {
-                        _packetsQueue.erase(_packetsQueue.begin()); //TODO may not be the first pkt in the queue !
-                        break;
-                    }
-                    case Packet::AT_LEAST_ONE_PACKET:
-                    {
-                        pkt.hasJustBeenSent();
-                        break;
-                    }
-                    default:
-                    {
-                        LOG("WTF! QoS is unknown!!");
-                        break;
-                    }
-                    }
-
-                    delay(10);
+                    pkt.hasJustBeenSent();
                     break;
                 }
                 default:
                 {
-                    LOG("WTF! received code %d", ret);
+                    LOG("WTF! QoS is unknown!!");
+                    break;
                 }
                 }
+
+                delay(10);
+                break;
+            }
+            default:
+            {
+                LOG("WTF! received code %d", ret);
+            }
             }
         }
     }
@@ -195,4 +198,18 @@ void LoRa::printPkt(Packet &pkt)
         Serial.printf(" %02X", data[i]);
     }
     Serial.printf("\nfree heap : %d\n", ESP.getFreeHeap());
+}
+
+bool LoRa::removePkt(Packet &pkt)
+{
+    std::vector<Packet>::iterator it;
+    for (it = _packetsQueue.begin(); it != _packetsQueue.end(); ++it)
+    {
+        if (it->getPktNumber() == pkt.getPktNumber())
+        {
+            _packetsQueue.erase(it);
+            return true;
+        }
+    }
+    return false;
 }
