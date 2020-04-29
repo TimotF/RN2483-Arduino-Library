@@ -1,11 +1,18 @@
 #include "packet.h"
 
-#define LOG(f_, ...)                              \
-    {                                             \
-        Serial.printf("[Packet] [%ld] ", millis()); \
-        Serial.printf((f_), ##__VA_ARGS__);       \
-        Serial.printf("\n");                      \
-    }
+#if 0
+#define LOG(f_, ...)                          \
+  {                                           \
+    Serial.printf("[Packet] [%ld] ", millis()); \
+    Serial.printf((f_), ##__VA_ARGS__);       \
+    Serial.printf("\n");                      \
+  }
+#else
+#define LOG(f_, ...)                          \
+  {                                           \
+    NOP(); \
+  }
+#endif
 
 const size_t Packet::_headerSize = 5;
 
@@ -63,7 +70,7 @@ Packet Packet::buildPktFromBase16str(const String &s)
     if (outputLength <= _headerSize) /* This is not a packet if the size is not even greater than the header size*/
         return Packet();
 
-    Packet output(outputLength);
+    Packet output(outputLength-_headerSize);
     uint8_t *outputPtr = output.get();
 
     for (size_t i = 0; i < outputLength; ++i)
