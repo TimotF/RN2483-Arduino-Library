@@ -10,12 +10,19 @@
 #include "Arduino.h"
 #include "rn2xx3.h"
 
+#if 0
 #define LOG(f_, ...)                          \
   {                                           \
     Serial.printf("[LoRa] [%ld] ", millis()); \
     Serial.printf((f_), ##__VA_ARGS__);       \
     Serial.printf("\n");                      \
   }
+#else
+#define LOG(f_, ...)                          \
+  {                                           \
+    NOP(); \
+  }
+#endif
 
 extern "C"
 {
