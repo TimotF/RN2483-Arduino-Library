@@ -5,6 +5,19 @@
 #include "freertos/ringbuf.h"
 #include "packet.h"
 
+#define TIME_BEFORE_RX_WINDOW 200
+#define MIN_LISTENING_TIME 500
+#define MIN_TIME_BTW_PKT 150
+
+enum LoraStates
+{
+    INIT,
+    LORA_RX,
+    LORA_TX,
+    GO_TO_RX,
+    GO_TO_TX
+};
+
 class LoRa
 {
 public:
@@ -27,11 +40,16 @@ private:
     rn2xx3 _lora;
     bool _rxListening = false;
     std::vector<Packet> _packetsQueue;
+    uint32_t _lastPktSentTime = 0;
+    uint32_t _lastPktReicvTime = 0;
+    LoraStates _state = INIT;
     // TODO : 2 queues de packets, 1 pour le RX, 1 pour le TX
 
     bool formatData(const uint8_t *data, uint16_t dataSize, bool ack);
     void createACK(const uint8_t pktNb);
     bool removePkt(uint8_t pktNb);
+    std::vector<Packet>::iterator hasPktToSend();
+    void cleanUpPacketQueue();
 };
 
 #endif
