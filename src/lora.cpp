@@ -67,6 +67,7 @@ void LoRa::loop()
             {
                 // LOG("Received pkt requires ACK repply");
                 createACK(pkt.getPktNumber());
+                _state = GO_TO_TX;
             }
             if (pkt.getType() == Packet::ACK) /* received ACK, need to remove corresponding pkt */
             {
@@ -76,9 +77,6 @@ void LoRa::loop()
                 }
                 else
                 {
-                    // uint8_t *data = pkt.getData();
-                    // LOG("[q=%d][IN][ACK%d]", getNbPktInQueue(), *data);
-                    // removePkt(*data);
                     LOG("[q=%d][IN][ACK%d]", getNbPktInQueue(), pkt.getPktNumber());
                     removePkt(pkt.getPktNumber());
                 }
@@ -118,6 +116,7 @@ void LoRa::loop()
     }
     case LORA_TX:
     {
+        _state = GO_TO_TX;
         std::vector<Packet>::iterator pkt = hasPktToSend();
         LOG("[q=%d][OUT][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt->getType(), pkt->getPktNumber());
         TX_RETURN_TYPE ret = _lora.txBytes(pkt->get(), pkt->getPktSize());
@@ -140,6 +139,7 @@ void LoRa::loop()
             case Packet::AT_LEAST_ONE_PACKET:
             {
                 pkt->hasJustBeenSent();
+                _state = GO_TO_RX;
                 break;
             }
             default:
@@ -156,7 +156,7 @@ void LoRa::loop()
             LOG("WTF! received code %d", ret);
         }
         }
-        _state = GO_TO_TX;
+        
         break;
     }
     case GO_TO_RX:

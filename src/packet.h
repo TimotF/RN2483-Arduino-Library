@@ -118,7 +118,7 @@ private:
     static const size_t _headerSize;
     uint8_t *_data;
     size_t _dataSize = 0;
-    uint32_t _timeout = 30000;   /* if no ack received during this time, then the packet is resent */
+    uint32_t _timeout = 0;       /* if no ack received during this time, then the packet is resent */
     uint32_t _sentTimestamp = 0; /* timestamp of the time that the packet was sent */
     uint8_t _sent = 0;           /* The number of times the packet was sent */
     uint8_t _maxRetry = 5;       /* The maximum number of times a packet is sent before dropping it */
