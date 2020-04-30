@@ -92,7 +92,7 @@ void LoRa::loop()
             {
                 LOG("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());
                 if (_reicvCallback != NULL)
-                    _reicvCallback(pkt.getData(), pkt.getDataSize());
+                    _reicvCallback(pkt.getData(), pkt.getDataSize(), pkt.getType());
             }
 
             break;
