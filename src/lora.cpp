@@ -1,11 +1,18 @@
 #include "lora.h"
 
-#define LOG(f_, ...)                              \
-    {                                             \
-        Serial.printf("[LoRa] [%ld] ", millis()); \
-        Serial.printf((f_), ##__VA_ARGS__);       \
-        Serial.printf("\n");                      \
-    }
+#if 0
+#define LOG(f_, ...)                          \
+  {                                           \
+    Serial.printf("[LoRa] [%ld] ", millis()); \
+    Serial.printf((f_), ##__VA_ARGS__);       \
+    Serial.printf("\n");                      \
+  }
+#else
+#define LOG(f_, ...)                          \
+  {                                           \
+    NOP(); \
+  }
+#endif
 
 uint8_t LoRa::_pktCounter = 0;
 
@@ -84,6 +91,8 @@ void LoRa::loop()
             else
             {
                 LOG("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());
+                if (_reicvCallback != NULL)
+                    _reicvCallback(pkt.getData(), pkt.getDataSize());
             }
 
             break;
@@ -156,7 +165,7 @@ void LoRa::loop()
             LOG("WTF! received code %d", ret);
         }
         }
-        
+
         break;
     }
     case GO_TO_RX:

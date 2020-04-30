@@ -32,7 +32,7 @@ public:
     void loop();
     void printPkt(Packet &pkt);
     int getNbPktInQueue() { return _packetsQueue.size(); }
-    //TODO : implement callback for received packets
+    void setReicvCallback(void (*reicvCallback)(uint8_t *payload, uint8_t size)) { _reicvCallback = reicvCallback; }
 
 private:
     static const uint8_t _maxPktSize = 235;
@@ -44,7 +44,7 @@ private:
     uint32_t _lastPktSentTime = 0;
     uint32_t _lastPktReicvTime = 0;
     LoraStates _state = INIT;
-    // TODO : 2 queues de packets, 1 pour le RX, 1 pour le TX
+    void (*_reicvCallback)(uint8_t *payload, uint8_t size);
 
     bool formatData(const uint8_t *data, uint16_t dataSize, bool ack);
     void createACK(const uint8_t pktNb);
