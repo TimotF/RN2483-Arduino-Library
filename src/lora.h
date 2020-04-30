@@ -9,6 +9,7 @@
 #define MIN_LISTENING_TIME 1000
 #define MIN_TIME_BTW_PKT 250
 #define MAX_TX_TIME 5000
+#define MAX_PKTS_IN_QUEUE 25
 
 enum LoraStates
 {

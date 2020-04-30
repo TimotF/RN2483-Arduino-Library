@@ -27,6 +27,9 @@ bool LoRa::sendData(const uint8_t *data, uint16_t dataSize, bool ack)
     if ((data == NULL) | (dataSize == 0))
         return false;
 
+    if (getNbPktInQueue() > MAX_PKTS_IN_QUEUE)
+        return false;
+
     return formatData(data, dataSize, ack);
 }
 
