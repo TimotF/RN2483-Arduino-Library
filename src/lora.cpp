@@ -230,18 +230,6 @@ bool LoRa::formatData(const uint8_t *data, uint16_t dataSize, bool ack)
     }
 }
 
-void LoRa::printPkt(Packet &pkt)
-{
-    uint8_t size = pkt.getPktSize();
-    uint8_t *data = pkt.get();
-    Serial.printf("Pkt of length %d, protocol %d, Qos %d, Type %d, split %d, sourceID %d, destID %d, nb %d\n", pkt.getPktSize(), pkt.getProtocolVersion(), pkt.getQoS(), pkt.getType(), pkt.isSplit(), pkt.getSourceID(), pkt.getDestID(), pkt.getPktNumber());
-    for (int i = 0; i < size; ++i)
-    {
-        Serial.printf(" %02X", data[i]);
-    }
-    Serial.printf("\nfree heap : %d\n", ESP.getFreeHeap());
-}
-
 bool LoRa::removePkt(uint8_t pktNb)
 {
     // LOG("Remove pkt %d", pktNb);
