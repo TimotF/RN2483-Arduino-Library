@@ -1,6 +1,6 @@
 #include "lora.h"
 
-#if 0
+#if 1
 #define LOG(f_, ...)                          \
   {                                           \
     Serial.printf("[LoRa] [%ld] ", millis()); \
@@ -84,15 +84,20 @@ void LoRa::loop()
                 }
                 else
                 {
-                    LOG("[q=%d][IN][ACK%d]", getNbPktInQueue(), pkt.getPktNumber());
+                    // LOG("[q=%d][IN][ACK%d]", getNbPktInQueue(), pkt.getPktNumber());
                     removePkt(pkt.getPktNumber());
                 }
             }
             else
             {
-                LOG("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());
-                if (_reicvCallback != NULL)
+                // LOG("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());
+                if(_lastPktReceived == pkt){
+                    LOG("Received dupplicate packet!");
+                }
+                else if (_reicvCallback != NULL)
                     _reicvCallback(pkt.getData(), pkt.getDataSize(), pkt.getType());
+
+                _lastPktReceived = pkt;
             }
 
             break;
@@ -127,7 +132,7 @@ void LoRa::loop()
     {
         _state = GO_TO_TX;
         std::vector<Packet>::iterator pkt = hasPktToSend();
-        LOG("[q=%d][OUT][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt->getType(), pkt->getPktNumber());
+        // LOG("[q=%d][OUT][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt->getType(), pkt->getPktNumber());
         TX_RETURN_TYPE ret = _lora.txBytes(pkt->get(), pkt->getPktSize());
         switch (ret)
         {
