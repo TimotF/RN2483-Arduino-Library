@@ -256,9 +256,17 @@ void LoRa::createACK(const uint8_t pktNb)
     ack.setProtocolVersion(Packet::VERSION_1);
     ack.setType(Packet::ACK);
     ack.setSplit(false);
-    // LOG("Added ACK for pkt %d in sending queue", pktNb);
-    // _packetsQueue.insert(_packetsQueue.begin(), ack);
-    _packetsQueue.push_back(ack);
+    /* ACK is prioritary over other type of packets, so we 
+    * must insert it just before the first packet to send that is not 
+    * of the type ACK */
+    std::vector<Packet>::iterator it;
+    for (it = _packetsQueue.begin(); it != _packetsQueue.end(); ++it)
+    {
+        if (it->getType() != Packet::ACK)
+            break;
+    }
+    _packetsQueue.insert(it, ack);
+    // _packetsQueue.push_back(ack);
 }
 
 std::vector<Packet>::iterator LoRa::hasPktToSend()
