@@ -67,7 +67,7 @@ Packet Packet::buildPktFromBase16str(const String &s)
     input.trim();
     const size_t inputLength = input.length();
     const size_t outputLength = inputLength / 2;
-    if (outputLength <= _headerSize) /* This is not a packet if the size is not even greater than the header size*/
+    if (outputLength < _headerSize) /* This is not a packet if the size is not even greater than the header size*/
         return Packet();
 
     Packet output(outputLength-_headerSize);
