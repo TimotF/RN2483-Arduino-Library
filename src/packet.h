@@ -77,6 +77,12 @@ public:
     }
 
     Packet &operator=(const Packet &pkt);
+    bool operator==(const Packet &pkt)
+    {
+        if (this->_pktSize != pkt._pktSize)
+            return false;
+        return !memcmp(this->_pkt, pkt._pkt, _pktSize);
+    }
 
     uint8_t *get() { return _pkt; }
     uint8_t *getData() { return _data; }
@@ -105,6 +111,8 @@ public:
     void setDestID(uint8_t id) { _header[3] = id; }
     void setPktNumber(uint8_t nb) { _header[4] = nb; }
     void hasJustBeenSent();
+
+    void print();
 
 private:
     uint8_t *_pkt;
