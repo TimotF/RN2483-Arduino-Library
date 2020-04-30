@@ -58,7 +58,7 @@ void LoRa::loop()
             _lastPktReicvTime = millis();
             Packet pkt = Packet::buildPktFromBase16str(received);
             // printPkt(pkt);
-            LOG("[IN][Type=%d] pkt nb = %d", pkt.getType(), pkt.getPktNumber());
+            // LOG("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());
             //TODO : drop packets that do not belong to us
             if (pkt.getQoS() == Packet::AT_LEAST_ONE_PACKET) /* we need to send an ack */
             {
@@ -74,9 +74,13 @@ void LoRa::loop()
                 else
                 {
                     uint8_t *data = pkt.getData();
-                    // LOG("received ACK, removing packet %d from queue", *data);
+                    LOG("[q=%d][IN][ACK%d]", getNbPktInQueue(), *data);
                     removePkt(*data);
                 }
+            }
+            else
+            {
+                LOG("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());
             }
 
             break;
@@ -110,7 +114,7 @@ void LoRa::loop()
     case LORA_TX:
     {
         std::vector<Packet>::iterator pkt = hasPktToSend();
-        LOG("[OUT][Type=%d] pkt nb = %d", pkt->getType(), pkt->getPktNumber());
+        LOG("[q=%d][OUT][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt->getType(), pkt->getPktNumber());
         TX_RETURN_TYPE ret = _lora.txBytes(pkt->get(), pkt->getPktSize());
         switch (ret)
         {
@@ -163,7 +167,12 @@ void LoRa::loop()
     }
     case GO_TO_TX:
     {
-        if (hasPktToSend() != _packetsQueue.end())
+        if (millis() - _lastPktReicvTime > (MIN_LISTENING_TIME + TIME_BEFORE_RX_WINDOW + MAX_TX_TIME))
+        {
+            if (millis() - _lastPktSentTime > TIME_BEFORE_RX_WINDOW)
+                _state = GO_TO_RX;
+        }
+        else if (hasPktToSend() != _packetsQueue.end())
         {
             if (_rxListening)
             {
@@ -221,7 +230,7 @@ void LoRa::printPkt(Packet &pkt)
 
 bool LoRa::removePkt(uint8_t pktNb)
 {
-    LOG("Remove pkt %d", pktNb);
+    // LOG("Remove pkt %d", pktNb);
     std::vector<Packet>::iterator it;
     for (it = _packetsQueue.begin(); it != _packetsQueue.end(); ++it)
     {
@@ -245,7 +254,8 @@ void LoRa::createACK(const uint8_t pktNb)
     ack.setType(Packet::ACK);
     ack.setSplit(false);
     // LOG("Added ACK for pkt %d in sending queue", pktNb);
-    _packetsQueue.insert(_packetsQueue.begin(), ack);
+    // _packetsQueue.insert(_packetsQueue.begin(), ack);
+    _packetsQueue.push_back(ack);
 }
 
 std::vector<Packet>::iterator LoRa::hasPktToSend()

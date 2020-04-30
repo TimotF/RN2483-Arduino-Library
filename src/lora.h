@@ -5,9 +5,10 @@
 #include "freertos/ringbuf.h"
 #include "packet.h"
 
-#define TIME_BEFORE_RX_WINDOW 200
-#define MIN_LISTENING_TIME 500
-#define MIN_TIME_BTW_PKT 150
+#define TIME_BEFORE_RX_WINDOW 1000
+#define MIN_LISTENING_TIME 1000
+#define MIN_TIME_BTW_PKT 250
+#define MAX_TX_TIME 5000
 
 enum LoraStates
 {
