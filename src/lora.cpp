@@ -70,15 +70,17 @@ void LoRa::loop()
             }
             if (pkt.getType() == Packet::ACK) /* received ACK, need to remove corresponding pkt */
             {
-                if (pkt.getDataSize() != 1)
+                if (pkt.getDataSize() != 0)
                 {
-                    LOG("[IN] Error : received ACK with more than 1 byte of payload!");
+                    LOG("[IN] Error : received ACK with payload!");
                 }
                 else
                 {
-                    uint8_t *data = pkt.getData();
-                    LOG("[q=%d][IN][ACK%d]", getNbPktInQueue(), *data);
-                    removePkt(*data);
+                    // uint8_t *data = pkt.getData();
+                    // LOG("[q=%d][IN][ACK%d]", getNbPktInQueue(), *data);
+                    // removePkt(*data);
+                    LOG("[q=%d][IN][ACK%d]", getNbPktInQueue(), pkt.getPktNumber());
+                    removePkt(pkt.getPktNumber());
                 }
             }
             else
@@ -248,8 +250,9 @@ bool LoRa::removePkt(uint8_t pktNb)
 
 void LoRa::createACK(const uint8_t pktNb)
 {
-    Packet ack = Packet(1, &pktNb);
-    ack.setPktNumber(_pktCounter++);
+    // Packet ack = Packet(1, &pktNb);
+    Packet ack = Packet();
+    ack.setPktNumber(pktNb);
     ack.setDestID(0);
     ack.setSourceID(0);
     ack.setQoS(Packet::ONE_PACKET_AT_MOST);

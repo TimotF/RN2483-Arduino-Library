@@ -2,7 +2,6 @@
 #define LORA_H
 #include "Arduino.h"
 #include "rn2xx3.h"
-#include "freertos/ringbuf.h"
 #include "packet.h"
 
 #define TIME_BEFORE_RX_WINDOW 1000
