@@ -1,22 +1,22 @@
 #include "lora.h"
 
 #if 1
-#define LOG(f_, ...)                          \
-  {                                           \
-    Serial.printf("[LoRa] [%ld] ", millis()); \
-    Serial.printf((f_), ##__VA_ARGS__);       \
-    Serial.printf("\n");                      \
-  }
+#define LOG(f_, ...)                              \
+    {                                             \
+        Serial.printf("[LoRa] [%ld] ", millis()); \
+        Serial.printf((f_), ##__VA_ARGS__);       \
+        Serial.printf("\n");                      \
+    }
 #else
-#define LOG(f_, ...)                          \
-  {                                           \
-    NOP(); \
-  }
+#define LOG(f_, ...) \
+    {                \
+        NOP();       \
+    }
 #endif
 
 uint8_t LoRa::_pktCounter = 0;
 
-bool LoRa::init(const bool &useP2P)
+bool LoRa::begin(const bool &useP2P)
 {
     if (useP2P)
     {
@@ -91,14 +91,16 @@ void LoRa::loop()
             else
             {
                 // LOG("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());
-                if(_lastPktReceived.getPktNumber() != (pkt.getPktNumber() - 1)){
-                    LOG("Missing packet !!!")
-                }
-                if(_lastPktReceived == pkt){
+                if (_lastPktReceived == pkt)
+                {
                     LOG("Received dupplicate packet!");
                 }
                 else if (_reicvCallback != NULL)
+                {
+                    if (_lastPktReceived.getPktNumber() != (pkt.getPktNumber() - 1))
+                        LOG("Missing packet !!!");
                     _reicvCallback(pkt.getData(), pkt.getDataSize(), pkt.getType());
+                }
 
                 _lastPktReceived = pkt;
             }
@@ -141,7 +143,7 @@ void LoRa::loop()
         {
         case TX_FAIL:
         {
-            init(_useP2P);
+            begin(_useP2P);
             break;
         }
         case TX_SUCCESS:
@@ -194,7 +196,7 @@ void LoRa::loop()
             if (millis() - _lastPktSentTime > TIME_BEFORE_RX_WINDOW)
                 _state = GO_TO_RX;
         }
-        else if (hasPktToSend() != _packetsQueue.end())
+        else if (hasPktToSend() != _packetsQueue.end()) /* Cannot use mutex here */
         {
             if (_rxListening)
             {
@@ -228,7 +230,9 @@ bool LoRa::formatData(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYP
         pkt.setType(pktType);
         pkt.setSplit(false);
         // LOG("Put pkt %d in sending queue", _pktCounter - 1);
+        xSemaphoreTake(_pktQueueMutex, portMAX_DELAY);
         _packetsQueue.push_back(pkt);
+        xSemaphoreGive(_pktQueueMutex);
         return true;
     }
     else /* data must be split into multiple packets */
@@ -240,16 +244,18 @@ bool LoRa::formatData(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYP
 
 bool LoRa::removePkt(uint8_t pktNb)
 {
-    // LOG("Remove pkt %d", pktNb);
+    xSemaphoreTake(_pktQueueMutex, portMAX_DELAY);
     std::vector<Packet>::iterator it;
     for (it = _packetsQueue.begin(); it != _packetsQueue.end(); ++it)
     {
         if (it->getPktNumber() == pktNb)
         {
             _packetsQueue.erase(it);
+            xSemaphoreGive(_pktQueueMutex);
             return true;
         }
     }
+    xSemaphoreGive(_pktQueueMutex);
     return false;
 }
 
@@ -267,6 +273,7 @@ void LoRa::createACK(const uint8_t pktNb)
     /* ACK is prioritary over other type of packets, so we 
     * must insert it just before the first packet to send that is not 
     * of the type ACK */
+    xSemaphoreTake(_pktQueueMutex, portMAX_DELAY);
     std::vector<Packet>::iterator it;
     for (it = _packetsQueue.begin(); it != _packetsQueue.end(); ++it)
     {
@@ -274,12 +281,13 @@ void LoRa::createACK(const uint8_t pktNb)
             break;
     }
     _packetsQueue.insert(it, ack);
-    // _packetsQueue.push_back(ack);
+    xSemaphoreGive(_pktQueueMutex);
 }
 
 std::vector<Packet>::iterator LoRa::hasPktToSend()
 {
     cleanUpPacketQueue();
+    xSemaphoreTake(_pktQueueMutex, portMAX_DELAY);
     std::vector<Packet>::iterator pkt;
     for (pkt = _packetsQueue.begin(); pkt != _packetsQueue.end(); ++pkt)
     {
@@ -290,18 +298,24 @@ std::vector<Packet>::iterator LoRa::hasPktToSend()
                 if (pkt->getSent() <= pkt->getMaxRetry())
                 {
                     // LOG("No ack, retry sending pkt %d", pkt->getPktNumber());
+                    xSemaphoreGive(_pktQueueMutex);
                     return pkt;
                 }
             }
         }
         else
+        {
+            xSemaphoreGive(_pktQueueMutex);
             return pkt;
+        }
     }
+    xSemaphoreGive(_pktQueueMutex);
     return pkt;
 }
 
 void LoRa::cleanUpPacketQueue()
 {
+    xSemaphoreTake(_pktQueueMutex, portMAX_DELAY);
     std::vector<Packet>::iterator pkt;
     for (pkt = _packetsQueue.begin(); pkt != _packetsQueue.end(); ++pkt)
     {
@@ -312,4 +326,5 @@ void LoRa::cleanUpPacketQueue()
             break;
         }
     }
+    xSemaphoreGive(_pktQueueMutex);
 }
