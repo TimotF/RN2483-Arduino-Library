@@ -27,7 +27,7 @@ public:
         init(useP2P);
     }
     bool init(const bool &useP2P);
-    bool sendData(const uint8_t *data, uint16_t dataSize, bool ack = false);
+    bool send(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType, bool ack = false);
     bool receivedData();
     void loop();
     int getNbPktInQueue() { return _packetsQueue.size(); }
@@ -46,7 +46,7 @@ private:
     void (*_reicvCallback)(uint8_t *payload, uint8_t size, Packet::PACKET_TYPE pktType);
     Packet _lastPktReceived;
 
-    bool formatData(const uint8_t *data, uint16_t dataSize, bool ack);
+    bool formatData(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType, bool ack);
     void createACK(const uint8_t pktNb);
     bool removePkt(uint8_t pktNb);
     std::vector<Packet>::iterator hasPktToSend();

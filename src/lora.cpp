@@ -28,7 +28,7 @@ bool LoRa::init(const bool &useP2P)
     }
 }
 
-bool LoRa::sendData(const uint8_t *data, uint16_t dataSize, bool ack)
+bool LoRa::send(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType, bool ack)
 {
 
     if ((data == NULL) | (dataSize == 0))
@@ -37,7 +37,7 @@ bool LoRa::sendData(const uint8_t *data, uint16_t dataSize, bool ack)
     if (getNbPktInQueue() > MAX_PKTS_IN_QUEUE)
         return false;
 
-    return formatData(data, dataSize, ack);
+    return formatData(data, dataSize, pktType, ack);
 }
 
 bool LoRa::receivedData()
@@ -91,6 +91,9 @@ void LoRa::loop()
             else
             {
                 // LOG("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());
+                if(_lastPktReceived.getPktNumber() != (pkt.getPktNumber() - 1)){
+                    LOG("Missing packet !!!")
+                }
                 if(_lastPktReceived == pkt){
                     LOG("Received dupplicate packet!");
                 }
@@ -209,7 +212,7 @@ void LoRa::loop()
     }
 }
 
-bool LoRa::formatData(const uint8_t *data, uint16_t dataSize, bool ack)
+bool LoRa::formatData(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType, bool ack)
 {
     if (dataSize < _maxPktSize) /* data can be stored in one packet */
     {
@@ -222,7 +225,7 @@ bool LoRa::formatData(const uint8_t *data, uint16_t dataSize, bool ack)
         else
             pkt.setQoS(Packet::ONE_PACKET_AT_MOST);
         pkt.setProtocolVersion(Packet::VERSION_1);
-        pkt.setType(Packet::DATA);
+        pkt.setType(pktType);
         pkt.setSplit(false);
         // LOG("Put pkt %d in sending queue", _pktCounter - 1);
         _packetsQueue.push_back(pkt);
