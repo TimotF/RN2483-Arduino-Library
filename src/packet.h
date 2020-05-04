@@ -129,7 +129,7 @@ private:
     uint32_t _timeout = 0;       /* if no ack received during this time, then the packet is resent */
     uint32_t _sentTimestamp = 0; /* timestamp of the time that the packet was sent */
     uint8_t _sent = 0;           /* The number of times the packet was sent */
-    uint8_t _maxRetry = 5;       /* The maximum number of times a packet is sent before dropping it */
+    uint8_t _maxRetry = 10;       /* The maximum number of times a packet is sent before dropping it */
 };
 
 #endif
