@@ -22,15 +22,18 @@ enum LoraStates
 class LoRa
 {
 public:
-    LoRa(Stream &serial, const bool &useP2P = false) : _lora(serial)
-    {
-        init(useP2P);
-    }
-    bool init(const bool &useP2P);
+    LoRa(Stream &serial) : _lora(serial) {}
+    bool begin(const bool &useP2P = false);
     bool send(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType, bool ack = false);
     bool receivedData();
     void loop();
-    int getNbPktInQueue() { return _packetsQueue.size(); }
+    int getNbPktInQueue()
+    {
+        xSemaphoreTake(_pktQueueMutex, portMAX_DELAY);
+        size_t ret = _packetsQueue.size();
+        xSemaphoreGive(_pktQueueMutex);
+        return ret;
+    }
     void setReicvCallback(void (*reicvCallback)(uint8_t *payload, uint8_t size, Packet::PACKET_TYPE pktType)) { _reicvCallback = reicvCallback; }
 
 private:
@@ -39,6 +42,7 @@ private:
     bool _useP2P = false;
     rn2xx3 _lora;
     bool _rxListening = false;
+    SemaphoreHandle_t _pktQueueMutex = xSemaphoreCreateMutex(); /* Mutex to protect _packetsQueue */
     std::vector<Packet> _packetsQueue;
     uint32_t _lastPktSentTime = 0;
     uint32_t _lastPktReicvTime = 0;
