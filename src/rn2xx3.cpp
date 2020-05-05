@@ -153,7 +153,7 @@ bool rn2xx3::initP2P()
   }
 
   sendRawCommand(F("radio set pwr 14"));
-  sendRawCommand(F("radio set sf sf7"));
+  sendRawCommand(F("radio set sf sf12"));
   sendRawCommand(F("radio set afcbw 41.7"));
   sendRawCommand(F("radio set rxbw 125"));
   sendRawCommand(F("radio set prlen 8"));

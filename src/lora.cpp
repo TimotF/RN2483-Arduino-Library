@@ -124,8 +124,11 @@ void LoRa::loop()
         }
         }
 
-        if (millis() - _lastPktReicvTime > (MIN_LISTENING_TIME + TIME_BEFORE_RX_WINDOW))
+        if (millis() - _lastPktReicvTime > (_randAdditionalLisTime + MIN_LISTENING_TIME + TIME_BEFORE_RX_WINDOW))
+        {
             _state = GO_TO_TX;
+            _lastPktReicvTime = millis();
+        }
         break;
     }
     case LORA_TX:
@@ -181,12 +184,14 @@ void LoRa::loop()
             _lora.setPassiveRxP2P();
         }
         _lastPktReicvTime = millis();
+        _randAdditionalLisTime = random(MIN_LISTENING_TIME);
+        LOG("random listening time = %ld", _randAdditionalLisTime);
         _state = LORA_RX;
         break;
     }
     case GO_TO_TX:
     {
-        if (millis() - _lastPktReicvTime > (MIN_LISTENING_TIME + TIME_BEFORE_RX_WINDOW + MAX_TX_TIME))
+        if (millis() - _lastPktReicvTime > (TIME_BEFORE_RX_WINDOW + MAX_TX_TIME))
         {
             if (millis() - _lastPktSentTime > TIME_BEFORE_RX_WINDOW)
                 _state = GO_TO_RX;
