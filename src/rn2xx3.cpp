@@ -18,9 +18,9 @@
     Serial.printf("\n");                      \
   }
 #else
-#define LOG(f_, ...)                          \
-  {                                           \
-    NOP(); \
+#define LOG(f_, ...) \
+  {                  \
+    NOP();           \
   }
 #endif
 
@@ -65,8 +65,10 @@ String rn2xx3::sysver()
 
 RN2xx3_t rn2xx3::configureModuleType()
 {
+  LOG("configure module type : ");
   String version = sysver();
   String model = version.substring(2, 6);
+  LOG("received %s => type = %s", version.c_str(), model.c_str());
   switch (model.toInt())
   {
   case 2903:
@@ -177,6 +179,7 @@ int rn2xx3::timedRead()
     }
     delay(1); /* RTOS delay */
   } while (millis() - startMillis < _serial.getTimeout());
+  LOG("serial timeout");
   return -1; // -1 indicates timeout
 }
 
@@ -838,7 +841,7 @@ String rn2xx3::sendRawCommand(const String &command)
     _lastErrorInvalidParam = command;
   }
 
-  //TODO: Add debug print
+  LOG("sent command %s => %s",command.c_str(),ret.c_str());
 
   return ret;
 }
