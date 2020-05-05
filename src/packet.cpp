@@ -14,13 +14,13 @@
     }
 #endif
 
-const size_t Packet::_headerSize = 5;
-
+const size_t Packet::_headerSize = 5; /* the header size is const. Header is defined as shown below */
 /* header : protocol_version (3), QoS (1), pktSplit (1), pktType (3), 
     futurUse (8), 
     source dev ID (8), 
     dest dev ID (8), 
     pktNumber (8) */
+    
 void Packet::setProtocolVersion(PROTOCOL_VERSION version)
 {
     _header[0] &= 0x1F;

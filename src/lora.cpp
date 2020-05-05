@@ -40,11 +40,6 @@ bool LoRa::send(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktT
     return formatData(data, dataSize, pktType, ack);
 }
 
-bool LoRa::receivedData()
-{
-    return false;
-}
-
 void LoRa::loop()
 {
     switch (_state)

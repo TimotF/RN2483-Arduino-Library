@@ -10,7 +10,7 @@
 #include "Arduino.h"
 #include "rn2xx3.h"
 
-#if 0
+#if 1
 #define LOG(f_, ...)                          \
   {                                           \
     Serial.printf("[LoRa] [%ld] ", millis()); \
