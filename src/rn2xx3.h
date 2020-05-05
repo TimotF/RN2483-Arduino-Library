@@ -104,7 +104,7 @@ public:
   /*
   * Initialise the RN2xx3 for P2P communication.
   */
-  bool initP2P();
+  bool initP2P(String sf = "sf7");
 
   TX_RETURN_TYPE listenP2P();  /* blocking */
   bool setPassiveRxP2P();      /* put module into rx mode */

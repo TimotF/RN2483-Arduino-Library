@@ -123,7 +123,7 @@ bool rn2xx3::init()
   }
 }
 
-bool rn2xx3::initP2P()
+bool rn2xx3::initP2P(String sf)
 {
   sendRawCommand(F("sys reset"));
   _radio2radio = true;
@@ -153,7 +153,7 @@ bool rn2xx3::initP2P()
   }
 
   sendRawCommand(F("radio set pwr 14"));
-  sendRawCommand(F("radio set sf sf12"));
+  sendRawCommand("radio set sf " + sf);
   sendRawCommand(F("radio set afcbw 41.7"));
   sendRawCommand(F("radio set rxbw 125"));
   sendRawCommand(F("radio set prlen 8"));
@@ -162,6 +162,7 @@ bool rn2xx3::initP2P()
   sendRawCommand(F("radio set cr 4/5"));
   sendRawCommand(F("radio set sync 12"));
   sendRawCommand(F("radio set bw 125"));
+  sendRawCommand(F("radio set wdt 60000"));
 
   return true;
 }

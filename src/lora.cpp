@@ -16,11 +16,42 @@
 
 uint8_t LoRa::_pktCounter = 0;
 
-bool LoRa::begin(const bool &useP2P)
+bool LoRa::begin(String sf, const bool &useP2P)
 {
+    _sf = sf;
+    if (_sf == "sf7")
+    {
+        _minListeningTime = MIN_LISTENING_TIME_SF7;
+    }
+    else if (_sf == "sf8")
+    {
+        _minListeningTime = MIN_LISTENING_TIME_SF8;
+    }
+    else if (_sf == "sf9")
+    {
+        _minListeningTime = MIN_LISTENING_TIME_SF9;
+    }
+    else if (_sf == "sf10")
+    {
+        _minListeningTime = MIN_LISTENING_TIME_SF10;
+    }
+    else if (_sf == "sf11")
+    {
+        _minListeningTime = MIN_LISTENING_TIME_SF11;
+    }
+    else if (_sf == "sf12")
+    {
+        _minListeningTime = MIN_LISTENING_TIME_SF12;
+    }
+    else
+    {
+        LOG("Error! unknown sf! Using SF7 as default value");
+        _sf = "sf7";
+        _minListeningTime = MIN_LISTENING_TIME_SF7;
+    }
     if (useP2P)
     {
-        return _lora.initP2P();
+        return _lora.initP2P(sf);
     }
     else
     {
@@ -96,7 +127,6 @@ void LoRa::loop()
                         LOG("Missing packet !!!");
                     _reicvCallback(pkt.getData(), pkt.getDataSize(), pkt.getType());
                 }
-
                 _lastPktReceived = pkt;
             }
 
@@ -124,7 +154,7 @@ void LoRa::loop()
         }
         }
 
-        if (millis() - _lastPktReicvTime > (_randAdditionalLisTime + MIN_LISTENING_TIME + TIME_BEFORE_RX_WINDOW))
+        if (millis() - _lastPktReicvTime > (_randAdditionalLisTime + (2 * _minListeningTime) + MIN_TIME_BTW_PKT))
         {
             _state = GO_TO_TX;
             _lastPktReicvTime = millis();
@@ -141,7 +171,7 @@ void LoRa::loop()
         {
         case TX_FAIL:
         {
-            begin(_useP2P);
+            begin(_sf, _useP2P);
             break;
         }
         case TX_SUCCESS:
@@ -184,16 +214,15 @@ void LoRa::loop()
             _lora.setPassiveRxP2P();
         }
         _lastPktReicvTime = millis();
-        _randAdditionalLisTime = random(MIN_LISTENING_TIME);
-        LOG("random listening time = %ld", _randAdditionalLisTime);
+        _randAdditionalLisTime = random(_minListeningTime);
         _state = LORA_RX;
         break;
     }
     case GO_TO_TX:
     {
-        if (millis() - _lastPktReicvTime > (TIME_BEFORE_RX_WINDOW + MAX_TX_TIME))
+        if (millis() - _lastPktReicvTime > (_minListeningTime + MAX_TX_TIME))
         {
-            if (millis() - _lastPktSentTime > TIME_BEFORE_RX_WINDOW)
+            if (millis() - _lastPktSentTime > _minListeningTime)
                 _state = GO_TO_RX;
         }
         else if (hasPktToSend() != _packetsQueue.end()) /* Cannot use mutex here */
@@ -206,7 +235,7 @@ void LoRa::loop()
             if (millis() - _lastPktSentTime > MIN_TIME_BTW_PKT)
                 _state = LORA_TX;
         }
-        else if (millis() - _lastPktSentTime > TIME_BEFORE_RX_WINDOW)
+        else if (millis() - _lastPktSentTime > _minListeningTime)
             _state = GO_TO_RX;
 
         break;
