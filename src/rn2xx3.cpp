@@ -108,7 +108,9 @@ String rn2xx3::deveui()
 
 bool rn2xx3::init()
 {
-  _radio2radio = false;
+  if (_radio2radio)
+    return initP2P(_sf);
+
   if (_appskey == "0") //appskey variable is set by both OTAA and ABP
   {
     return false;
@@ -125,6 +127,7 @@ bool rn2xx3::init()
 
 bool rn2xx3::initP2P(String sf)
 {
+  _sf = sf;
   sendRawCommand(F("sys reset"));
   _radio2radio = true;
 
@@ -842,7 +845,7 @@ String rn2xx3::sendRawCommand(const String &command)
     _lastErrorInvalidParam = command;
   }
 
-  LOG("sent command %s => %s",command.c_str(),ret.c_str());
+  LOG("sent command %s => %s", command.c_str(), ret.c_str());
 
   return ret;
 }

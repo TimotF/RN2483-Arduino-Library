@@ -1,6 +1,6 @@
 #include "packet.h"
 
-#if 0
+#if 1
 #define LOG(f_, ...)                                \
     {                                               \
         Serial.printf("[Packet] [%ld] ", millis()); \
@@ -20,7 +20,7 @@ const size_t Packet::_headerSize = 5; /* the header size is const. Header is def
     source dev ID (8), 
     dest dev ID (8), 
     pktNumber (8) */
-    
+
 void Packet::setProtocolVersion(PROTOCOL_VERSION version)
 {
     _header[0] &= 0x1F;
