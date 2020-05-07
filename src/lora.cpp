@@ -166,6 +166,11 @@ void LoRa::loop()
         _state = GO_TO_TX;
         std::vector<Packet>::iterator pkt = hasPktToSend();
         // LOG("[q=%d][OUT][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt->getType(), pkt->getPktNumber());
+        if (pkt == _packetsQueue.end())
+        {
+            LOG("ERROR : trying to send non existing packet!");
+            break;
+        }
         TX_RETURN_TYPE ret = _lora.txBytes(pkt->get(), pkt->getPktSize());
         switch (ret)
         {
