@@ -19,7 +19,7 @@ public:
 
     enum PACKET_TYPE /* packet type definition */
     {
-        DISCOVER = 0, /* Discover packet type, not implemented yet */
+        PING = 0, /* Discover packet type*/
         OTA = 1,      /* OTA packet type */
         DATA = 2,     /* DATA packet type */
         ACK = 3       /* ACK packet type */
