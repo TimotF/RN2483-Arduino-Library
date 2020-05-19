@@ -44,12 +44,15 @@ public:
         return ret;
     }
 
+    int getSNR() { return _snr; }
+
 private:
     rn2xx3 _lora;              /* lora object to handle communication with lora module */
     bool _rxListening = false; /* tells if module is currently listening to incoming messages */
     bool _useP2P = false;      /* decides if we want to use P2P communication, or LoRaWan */
     LoraStates _state = INIT;  /* LoRa state used for the state machine */
     String _sf;                /* spreading factor to use */
+    int _snr = -128;                  /* SNR for last received packet */
 
     static const uint8_t _maxPktSize = 235;                     /* maximum size of a packet */
     static uint8_t _pktCounter;                                 /* packet counter to set the packet number for each new packet */

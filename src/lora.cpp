@@ -89,9 +89,13 @@ void LoRa::loop()
         case TX_WITH_RX: /* received a message */
         {
             String received = _lora.getRx(); /* get received msg */
+            _snr = _lora.getSNR();           /* update SNR */
             _lora.setPassiveRxP2P();         /* go back into rx mode */
                                              /* Then, process received msg */
             _lastPktReicvTime = millis();
+
+            LOG("received msg with snr %d", _snr);
+
             Packet pkt = Packet::buildPktFromBase16str(received);
             // printPkt(pkt);
             // LOG("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());

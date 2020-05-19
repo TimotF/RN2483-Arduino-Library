@@ -111,6 +111,7 @@ public:
    bool setPassiveRxP2P();      /* put module into rx mode */
    bool stopPassiveRxP2P();     /* put module into rx mode */
    TX_RETURN_TYPE listenLoop(); /* must be called regularly if module is in passive rx mode */
+   
 
    /*
      * Initialise the RN2xx3 and join a network using personalization.
