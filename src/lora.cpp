@@ -125,11 +125,59 @@ void LoRa::loop()
                 {
                     LOG("Received dupplicate packet!");
                 }
-                else if (_reicvCallback != NULL)
+                else
                 {
-                    if (_lastPktReceived.getPktNumber() != (pkt.getPktNumber() - 1))
-                        LOG("Missing packet !!!");
-                    _reicvCallback(pkt.getData(), pkt.getDataSize(), pkt.getType());
+                    if (pkt.isSplit())
+                    {
+                        LOG("received split packet!");
+                        _splitPktQueue.push_back(pkt);
+                        _hasSplitPacketsInBuffer = true;
+                    }
+                    else if (_hasSplitPacketsInBuffer)
+                    {
+                        LOG("received last split packet!");
+                        _splitPktQueue.push_back(pkt);
+                        std::vector<Packet>::iterator it = _splitPktQueue.begin();
+                        size_t dataSize = 0;
+                        Packet::PACKET_TYPE pktType = it->getType();
+                        uint8_t pktNb = it->getPktNumber() - 1;
+                        for (it = _splitPktQueue.begin(); it != _splitPktQueue.end(); ++it)
+                        {
+                            dataSize += it->getDataSize();
+                            if (it->getType() != pktType)
+                            {
+                                LOG("Warning! met packet type inconsistency when rebuilding split packet...");
+                            }
+                            if (it->getPktNumber() != (pktNb + 1))
+                            {
+                                LOG("Warning! pkt number inconsistency : current nb is %d while last nb is %d", it->getPktNumber(), pktNb);
+                            }
+
+                            pktType = it->getType();
+                            pktNb = it->getPktNumber();
+                        }
+                        LOG("total datasize for split packet is %d", dataSize);
+                        uint8_t data[dataSize];
+                        size_t dataIndex = 0;
+                        for (it = _splitPktQueue.begin(); it != _splitPktQueue.end(); ++it)
+                        {
+                            memcpy(data + dataIndex, it->getData(), it->getDataSize());
+                            dataIndex += it->getDataSize();
+                        }
+                        _splitPktQueue.clear();
+                        _hasSplitPacketsInBuffer = false;
+                        if (_reicvCallback != NULL)
+                        {
+                            LOG("Total retrieved payload : %d bytes", dataIndex);
+                            _reicvCallback(data, dataIndex, pktType);
+                        }
+                    }
+                    else if (_reicvCallback != NULL)
+                    {
+                        if (_lastPktReceived.getPktNumber() != (pkt.getPktNumber() - 1))
+                            LOG("Missing packet !!!");
+                        _reicvCallback(pkt.getData(), pkt.getDataSize(), pkt.getType());
+                    }
                 }
                 _lastPktReceived = pkt;
             }
@@ -252,9 +300,9 @@ void LoRa::loop()
     }
 }
 
-bool LoRa::formatData(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType, bool ack)
+bool LoRa::formatData(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType, bool ack, bool split)
 {
-    if (dataSize < _maxPktSize) /* data can be stored in one packet */
+    if (dataSize <= _maxPktSize) /* data can be stored in one packet */
     {
         Packet pkt((size_t)dataSize, data);
         pkt.setPktNumber(_pktCounter++);
@@ -266,17 +314,30 @@ bool LoRa::formatData(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYP
             pkt.setQoS(Packet::ONE_PACKET_AT_MOST);
         pkt.setProtocolVersion(Packet::VERSION_1);
         pkt.setType(pktType);
-        pkt.setSplit(false);
+        pkt.setSplit(split);
         // LOG("Put pkt %d in sending queue", _pktCounter - 1);
         xSemaphoreTake(_pktQueueMutex, portMAX_DELAY);
         _packetsQueue.push_back(pkt);
         xSemaphoreGive(_pktQueueMutex);
+        LOG("Added packet of size %d to the stack", dataSize);
         return true;
     }
     else /* data must be split into multiple packets */
     {
-        // TODO
-        return false;
+        // if (dataSize > 2048)
+        // {
+        //     LOG("cannot send this packet because it has more than 2048 bytes in it !");
+        //     return false;
+        // }
+        LOG("data size is %d, must be split into several packets...", dataSize);
+        for (int dataIndex = 0; dataIndex < dataSize; dataIndex += _maxPktSize)
+        {
+            if (dataSize - dataIndex > _maxPktSize)
+                formatData(data + dataIndex, _maxPktSize, pktType, true, true);
+            else
+                formatData(data + dataIndex, dataSize - dataIndex, pktType, true, false);
+        }
+        return true;
     }
 }
 
