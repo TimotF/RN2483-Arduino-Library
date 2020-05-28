@@ -65,7 +65,7 @@ bool LoRa::send(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktT
     if ((data == NULL) | (dataSize == 0))
         return false;
 
-    if (getNbPktInQueue() > MAX_PKTS_IN_QUEUE)
+    if (pktType == Packet::DATA && getNbPktInQueue() > MAX_PKTS_IN_QUEUE) // we dont want to refuse any payload other than DATA
         return false;
 
     return formatData(data, dataSize, pktType, ack);
@@ -317,7 +317,20 @@ bool LoRa::formatData(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYP
         pkt.setSplit(split);
         // LOG("Put pkt %d in sending queue", _pktCounter - 1);
         xSemaphoreTake(_pktQueueMutex, portMAX_DELAY);
-        _packetsQueue.push_back(pkt);
+        if (pktType == Packet::OTA)
+        {
+            std::vector<Packet>::iterator it;
+            for (it = _packetsQueue.begin(); it != _packetsQueue.end(); ++it)
+            {
+                if (it->getQoS() != Packet::ONE_PACKET_AT_MOST)
+                    break;
+            }
+            _packetsQueue.insert(it, pkt);
+        }
+        else
+        {
+            _packetsQueue.push_back(pkt);
+        }
         xSemaphoreGive(_pktQueueMutex);
         LOG("Added packet of size %d to the stack", dataSize);
         return true;
