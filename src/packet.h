@@ -21,9 +21,9 @@ public:
     enum PACKET_TYPE /* packet type definition */
     {
         PING = 0, /* Discover packet type*/
-        OTA = 1,      /* OTA packet type */
-        DATA = 2,     /* DATA packet type */
-        ACK = 3       /* ACK packet type */
+        OTA = 1,  /* OTA packet type */
+        DATA = 2, /* DATA packet type */
+        ACK = 3   /* ACK packet type */
     };
 
     Packet(size_t dataSize = 0, const uint8_t *data = NULL, bool dataContainsHeader = false) /* Packet constructor */
@@ -32,19 +32,21 @@ public:
         if (dataContainsHeader && (dataSize >= _headerSize)) /* if header is contained inside the data array */
         {
             _pktSize = dataSize;
-            _dataSize = dataSize - _headerSize;
             _pkt = new uint8_t[_pktSize];
             _header = _pkt;
             _data = _header + _headerSize;
             if (data != NULL)
-            {
                 memcpy(_pkt, data, _pktSize);
-            }
+            else
+                memset(_pkt, 0, _pktSize);
+            _paddingCount = _header[1];
+            _dataSize = _pktSize - _paddingCount;
         }
         else /* else, setup packet with empty header */
         {
             _dataSize = dataSize;
-            _pktSize = _dataSize + _headerSize;
+            _paddingCount = _paddingModule - ((_dataSize + _headerSize) % _paddingModule);
+            _pktSize = _dataSize + _headerSize + _paddingCount;
             _pkt = new uint8_t[_pktSize];
             _header = _pkt;
             _data = _header + _headerSize;
@@ -66,10 +68,11 @@ public:
         _pkt = new uint8_t[_pktSize];
         _header = _pkt;
         _data = _header + _headerSize;
+        _paddingCount = pkt._paddingCount;
         memcpy(_pkt, pkt._pkt, _pktSize);
     }
 
-    static Packet buildPktFromBase16str(const String &s, const String cypherKey="notUsed"); /* Method to build a packet from an hex formated string */
+    static Packet buildPktFromBase16str(const String &s, const String cypherKey = "notUsed"); /* Method to build a packet from an hex formated string */
 
     ~Packet() /* packet destructor */
     {
@@ -87,6 +90,7 @@ public:
     uint8_t *get() { return _pkt; }          /* getter for the packet array */
     uint8_t *getData() { return _data; }     /* getter for the data array */
     uint8_t *getHeader() { return _header; } /* getter for the header array */
+    uint8_t *getCyphered(String cypherKey);  /* padd the packet and return a copy of its content cyphered */
 
     PROTOCOL_VERSION getProtocolVersion() { return (PROTOCOL_VERSION)((_header[0] & 0xE0) >> 5); } /* getter for the protocol version */
     QoS getQoS() { return (QoS)((_header[0] & 0x10) >> 4); }                                       /* getter for the QOS */
@@ -117,7 +121,7 @@ private:
     uint8_t *_pkt;       /* packet array, containing the header array and the data array */
     size_t _pktSize = 0; /* packet size which is the sum of headerSize and dataSize */
     /* header : protocol_version (3), QoS (1), pktSplit (1), pktType (3), 
-    futurUse (8), 
+    paddingCount (8), 
     source dev ID (8), 
     dest dev ID (8), 
     pktNumber (8) */
@@ -129,6 +133,8 @@ private:
     uint32_t _sentTimestamp = 0;     /* timestamp of the time that the packet was sent */
     uint8_t _sent = 0;               /* The number of times the packet was sent */
     uint8_t _maxRetry = 10;          /* The maximum number of times a packet is sent before dropping it */
+    uint8_t _paddingCount = 0;       /* The number of padded bytes added at the end of the data */
+    uint8_t _paddingModule = 16;     /* The packet length should be a multiple of this */
 };
 
 #endif

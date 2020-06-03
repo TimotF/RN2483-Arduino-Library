@@ -21,24 +21,25 @@ const size_t Packet::_headerSize = 5; /* the header size is const. Header is def
     dest dev ID (8), 
     pktNumber (8) */
 
+static void crypt(esp_aes_context *ctx, int mode, size_t length, const unsigned char *input, unsigned char *output)
+{
 
+    if (length % 16 != 0)
+    {
+        LOG("length not a multiple of 16, padding required!");
+        return;
+    }
 
-static void crypt(esp_aes_context *ctx, int mode, size_t length, const unsigned char *input, unsigned char *output ){
+    unsigned char inputBuffer[length];
+    unsigned char outputBuffer[length];
+    memset(inputBuffer, 0, length);
+    memcpy(inputBuffer, input, length);
 
-  if(length%16 != 0){
-    LOG("length not a multiple of 16, padding required!");
-    return ;
-  }
-
-  unsigned char inputBuffer[length];
-  unsigned char outputBuffer[length];
-  memset( inputBuffer, 0, length );
-  memcpy(inputBuffer,input,length);
-
-  for(int i = 0; i<length; i+=16){
-    esp_aes_crypt_ecb( ctx, mode, inputBuffer+i, outputBuffer+i);
-  }
-  memcpy(output,outputBuffer,length);
+    for (int i = 0; i < length; i += 16)
+    {
+        esp_aes_crypt_ecb(ctx, mode, inputBuffer + i, outputBuffer + i);
+    }
+    memcpy(output, outputBuffer, length);
 }
 
 void Packet::setProtocolVersion(PROTOCOL_VERSION version)
@@ -96,8 +97,7 @@ Packet Packet::buildPktFromBase16str(const String &s, const String cypherKey)
         return Packet();
     }
 
-    Packet output(outputLength - _headerSize);
-    uint8_t *outputPtr = output.get();
+    uint8_t receivedData[outputLength];
 
     for (size_t i = 0; i < outputLength; ++i)
     {
@@ -106,7 +106,7 @@ Packet Packet::buildPktFromBase16str(const String &s, const String cypherKey)
         toDo[1] = input[i * 2 + 1];
         toDo[2] = '\0';
         int out = strtoul(toDo, 0, 16);
-        outputPtr[i] = uint8_t(out);
+        receivedData[i] = uint8_t(out);
     }
 
     if (cypherKey.length() == 33) /*We need to decrypt the packet*/
@@ -116,15 +116,14 @@ Packet Packet::buildPktFromBase16str(const String &s, const String cypherKey)
         esp_aes_context ctx;
         esp_aes_init(&ctx);
         esp_aes_setkey(&ctx, key, 256);
-        crypt( &ctx, ESP_AES_DECRYPT, outputLength, outputPtr, outputPtr );
-        // output.unpadd();
+        crypt(&ctx, ESP_AES_DECRYPT, outputLength, receivedData, receivedData);
     }
     else if (cypherKey != "notUsed")
     {
         LOG("incorrect cypher key length (%d)", cypherKey.length());
     }
 
-    return output;
+    return Packet(outputLength, receivedData, true);
 }
 
 void Packet::hasJustBeenSent()
@@ -145,3 +144,5 @@ void Packet::print()
     }
     Serial.println("");
 }
+
+// uint8_t *getCyphered(String cypherKey);
