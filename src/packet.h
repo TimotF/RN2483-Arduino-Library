@@ -87,10 +87,10 @@ public:
         return !memcmp(this->_pkt, pkt._pkt, _pktSize); /* else, return the comparison of the memory allocated to the packet */
     }
 
-    uint8_t *get() { return _pkt; }          /* getter for the packet array */
-    uint8_t *getData() { return _data; }     /* getter for the data array */
-    uint8_t *getHeader() { return _header; } /* getter for the header array */
-    uint8_t *getCyphered(String cypherKey);  /* padd the packet and return a copy of its content cyphered */
+    uint8_t *get() { return _pkt; }                               /* getter for the packet array */
+    uint8_t *getData() { return _data; }                          /* getter for the data array */
+    uint8_t *getHeader() { return _header; }                      /* getter for the header array */
+    uint8_t *getCyphered(uint8_t *pktCyphered, String cypherKey); /* padd the packet and return a copy of its content cyphered */
 
     PROTOCOL_VERSION getProtocolVersion() { return (PROTOCOL_VERSION)((_header[0] & 0xE0) >> 5); } /* getter for the protocol version */
     QoS getQoS() { return (QoS)((_header[0] & 0x10) >> 4); }                                       /* getter for the QOS */

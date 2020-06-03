@@ -145,4 +145,13 @@ void Packet::print()
     Serial.println("");
 }
 
-// uint8_t *getCyphered(String cypherKey);
+uint8_t *Packet::getCyphered(uint8_t* pktCyphered, String cypherKey)
+{
+    uint8_t key[32];
+    memcpy(key, cypherKey.c_str(), 32);
+    esp_aes_context ctx;
+    esp_aes_init(&ctx);
+    esp_aes_setkey(&ctx, key, 256);
+    crypt(&ctx, ESP_AES_ENCRYPT, _pktSize, _pkt, pktCyphered);
+    return pktCyphered;
+}
