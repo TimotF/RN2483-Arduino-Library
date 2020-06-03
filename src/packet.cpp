@@ -21,6 +21,26 @@ const size_t Packet::_headerSize = 5; /* the header size is const. Header is def
     dest dev ID (8), 
     pktNumber (8) */
 
+
+
+static void crypt(esp_aes_context *ctx, int mode, size_t length, const unsigned char *input, unsigned char *output ){
+
+  if(length%16 != 0){
+    LOG("length not a multiple of 16, padding required!");
+    return ;
+  }
+
+  unsigned char inputBuffer[length];
+  unsigned char outputBuffer[length];
+  memset( inputBuffer, 0, length );
+  memcpy(inputBuffer,input,length);
+
+  for(int i = 0; i<length; i+=16){
+    esp_aes_crypt_ecb( ctx, mode, inputBuffer+i, outputBuffer+i);
+  }
+  memcpy(output,outputBuffer,length);
+}
+
 void Packet::setProtocolVersion(PROTOCOL_VERSION version)
 {
     _header[0] &= 0x1F;
@@ -61,7 +81,7 @@ Packet &Packet::operator=(const Packet &pkt)
     return *this;
 }
 
-Packet Packet::buildPktFromBase16str(const String &s)
+Packet Packet::buildPktFromBase16str(const String &s, const String cypherKey)
 {
     String input(s); // Make a deep copy to be able to do trim()
     input.trim();
@@ -69,6 +89,12 @@ Packet Packet::buildPktFromBase16str(const String &s)
     const size_t outputLength = inputLength / 2;
     if (outputLength < _headerSize) /* This is not a packet if the size is not even greater than the header size*/
         return Packet();
+
+    if (cypherKey != "notUsed" && outputLength % 16 != 0)
+    {
+        LOG("Error : cannot build this packet!");
+        return Packet();
+    }
 
     Packet output(outputLength - _headerSize);
     uint8_t *outputPtr = output.get();
@@ -81,6 +107,21 @@ Packet Packet::buildPktFromBase16str(const String &s)
         toDo[2] = '\0';
         int out = strtoul(toDo, 0, 16);
         outputPtr[i] = uint8_t(out);
+    }
+
+    if (cypherKey.length() == 33) /*We need to decrypt the packet*/
+    {
+        uint8_t key[32];
+        memcpy(key, cypherKey.c_str(), 32);
+        esp_aes_context ctx;
+        esp_aes_init(&ctx);
+        esp_aes_setkey(&ctx, key, 256);
+        crypt( &ctx, ESP_AES_DECRYPT, outputLength, outputPtr, outputPtr );
+        // output.unpadd();
+    }
+    else if (cypherKey != "notUsed")
+    {
+        LOG("incorrect cypher key length (%d)", cypherKey.length());
     }
 
     return output;

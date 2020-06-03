@@ -2,6 +2,7 @@
 #define PACKET_H
 
 #include "Arduino.h"
+#include <hwcrypto/aes.h>
 
 class Packet
 {
@@ -68,7 +69,7 @@ public:
         memcpy(_pkt, pkt._pkt, _pktSize);
     }
 
-    static Packet buildPktFromBase16str(const String &s); /* Method to build a packet from an hex formated string */
+    static Packet buildPktFromBase16str(const String &s, const String cypherKey="notUsed"); /* Method to build a packet from an hex formated string */
 
     ~Packet() /* packet destructor */
     {
