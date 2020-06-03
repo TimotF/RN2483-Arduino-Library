@@ -109,7 +109,7 @@ Packet Packet::buildPktFromBase16str(const String &s, const String cypherKey)
         receivedData[i] = uint8_t(out);
     }
 
-    if (cypherKey.length() == 33) /*We need to decrypt the packet*/
+    if (cypherKey.length() == 32) /*We need to decrypt the packet*/
     {
         uint8_t key[32];
         memcpy(key, cypherKey.c_str(), 32);
@@ -123,7 +123,10 @@ Packet Packet::buildPktFromBase16str(const String &s, const String cypherKey)
         LOG("incorrect cypher key length (%d)", cypherKey.length());
     }
 
-    return Packet(outputLength, receivedData, true);
+    Packet ret = Packet(outputLength, receivedData, true);
+    LOG("Decyphered pkt : total length = %d, datalength = %d, paddingLength = %d", ret.getPktSize(), ret.getDataSize(), ret._paddingCount);
+    ret.print();
+    return ret;
 }
 
 void Packet::hasJustBeenSent()
@@ -143,9 +146,11 @@ void Packet::print()
         Serial.printf(" %02X", data[i]);
     }
     Serial.println("");
+    String asciiData = String((char *)(data + _headerSize));
+    Serial.printf("data = %s\n", asciiData.c_str());
 }
 
-uint8_t *Packet::getCyphered(uint8_t* pktCyphered, String cypherKey)
+uint8_t *Packet::getCyphered(uint8_t *pktCyphered, String cypherKey)
 {
     uint8_t key[32];
     memcpy(key, cypherKey.c_str(), 32);

@@ -33,8 +33,12 @@ public:
     bool begin(String sf = "sf7", const bool &useP2P = false); /* method to initialize the LoRa object. To call after declaration of the LoRa object */
     void loop();                                               /* LoRa loop, to call in a regular basis */
 
-    bool send(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType, bool ack = false);                                             /* method to send data via LoRa */
+    bool send(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType, bool ack = false);                                            /* method to send data via LoRa */
     void setReicvCallback(void (*reicvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType)) { _reicvCallback = reicvCallback; } /* set receive callback to call when a packet was just received */
+
+    void useCyphering(String key);
+
+    void stopCyphering() { _useCyphering = false; }
 
     int getNbPktInQueue() /* get the number of packets currently stored in the queue */
     {
@@ -60,14 +64,17 @@ private:
     std::vector<Packet> _packetsQueue;                          /* packets queue to store packets that need to be transmitted */
     uint32_t _lastPktSentTime = 0;                              /* timestamp of the moment the last packet was sent */
 
-    std::vector<Packet> _splitPktQueue;   /* Buffer for receiving split paclets */
+    std::vector<Packet> _splitPktQueue;    /* Buffer for receiving split paclets */
     bool _hasSplitPacketsInBuffer = false; /* tells if there is split type packets in the buffer */
 
-    uint32_t _lastPktReicvTime = 0;                                                      /* timestamp of the moment a new packet was received  */
+    bool _useCyphering = false; /* tells if we are cyphering the packets we send through lora*/
+    String _cypherKey;
+
+    uint32_t _lastPktReicvTime = 0;                                                     /* timestamp of the moment a new packet was received  */
     void (*_reicvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType); /* callback function to call when a new packet was received */
-    Packet _lastPktReceived;                                                             /* a copy of the last packet received */
-    uint32_t _randAdditionalLisTime;                                                     /* An additional random number of milliseconds between 0 and MIN_LISTENING_TIME to wait before going out of RX state */
-    uint32_t _minListeningTime;                                                          /* minimum listening time */
+    Packet _lastPktReceived;                                                            /* a copy of the last packet received */
+    uint32_t _randAdditionalLisTime;                                                    /* An additional random number of milliseconds between 0 and MIN_LISTENING_TIME to wait before going out of RX state */
+    uint32_t _minListeningTime;                                                         /* minimum listening time */
 
     std::vector<Packet>::iterator hasPktToSend();                                                                       /* returns an iterator of the next packet to send. If none, return end of queue */
     void cleanUpPacketQueue();                                                                                          /* Check and removes the packets in the queue that were sent too many times */

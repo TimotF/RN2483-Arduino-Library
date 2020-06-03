@@ -96,10 +96,21 @@ void LoRa::loop()
 
             LOG("received msg with snr %d", _snr);
 
-            Packet pkt = Packet::buildPktFromBase16str(received);
+            Packet pkt;
+            if (_useCyphering)
+                pkt = Packet::buildPktFromBase16str(received, _cypherKey);
+            else
+                pkt = Packet::buildPktFromBase16str(received);
             // printPkt(pkt);
             // LOG("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());
             //TODO : drop packets that do not belong to us
+
+            if (!(pkt.getType() == Packet::DATA || pkt.getType() == Packet::PING || pkt.getType() == Packet::OTA || pkt.getType() == Packet::ACK))
+            {
+                LOG("Unknown packet type!");
+                break;
+            }
+
             if (pkt.getQoS() == Packet::AT_LEAST_ONE_PACKET) /* we need to send an ack */
             {
                 // LOG("Received pkt requires ACK repply");
@@ -223,7 +234,9 @@ void LoRa::loop()
             LOG("ERROR : trying to send non existing packet!");
             break;
         }
-        TX_RETURN_TYPE ret = _lora.txBytes(pkt->get(), pkt->getPktSize());
+        size_t pktSize = pkt->getPktSize();
+        uint8_t pktbuf[pktSize];
+        TX_RETURN_TYPE ret = _lora.txBytes(_useCyphering ? pkt->getCyphered(pktbuf, _cypherKey) : pkt->get(), pktSize);
         switch (ret)
         {
         case TX_FAIL:
@@ -439,4 +452,15 @@ void LoRa::cleanUpPacketQueue()
         }
     }
     xSemaphoreGive(_pktQueueMutex);
+}
+
+void LoRa::useCyphering(String key)
+{
+    if (key.length() != 32)
+    {
+        LOG("cannot use a key of length %d", key.length());
+        return;
+    }
+    _cypherKey = String(key);
+    _useCyphering = true;
 }

@@ -40,7 +40,7 @@ public:
             else
                 memset(_pkt, 0, _pktSize);
             _paddingCount = _header[1];
-            _dataSize = _pktSize - _paddingCount;
+            _dataSize = _pktSize - _headerSize - _paddingCount;
         }
         else /* else, setup packet with empty header */
         {
@@ -55,6 +55,7 @@ public:
                 memcpy(_data, data, _dataSize);
             }
             memset(_header, 0, _headerSize);
+            _header[1] = _paddingCount;
         }
     }
     Packet(const Packet &pkt) /* Packet copy constructor */
