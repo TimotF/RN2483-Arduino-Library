@@ -58,7 +58,7 @@ private:
     String _sf;                /* spreading factor to use */
     int _snr = -128;           /* SNR for last received packet */
 
-    static const uint8_t _maxPktSize = 235;                     /* maximum size of a packet */
+    static const uint8_t _maxPktSize = 230;                     /* maximum size of a packet */
     static uint8_t _pktCounter;                                 /* packet counter to set the packet number for each new packet */
     SemaphoreHandle_t _pktQueueMutex = xSemaphoreCreateMutex(); /* Mutex to protect _packetsQueue */
     std::vector<Packet> _packetsQueue;                          /* packets queue to store packets that need to be transmitted */
