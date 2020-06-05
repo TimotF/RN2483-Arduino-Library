@@ -105,9 +105,8 @@ void LoRa::loop()
             // LOG("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());
             //TODO : drop packets that do not belong to us
 
-            if (!(pkt.getType() == Packet::DATA || pkt.getType() == Packet::PING || pkt.getType() == Packet::OTA || pkt.getType() == Packet::ACK))
-            {
-                LOG("Unknown packet type!");
+            if(!pkt.checkIntegity()){
+                LOG("Integrity error in received packet");
                 break;
             }
 
@@ -234,6 +233,7 @@ void LoRa::loop()
             LOG("ERROR : trying to send non existing packet!");
             break;
         }
+        pkt->computeChecksum();
         size_t pktSize = pkt->getPktSize();
         uint8_t pktbuf[pktSize];
         TX_RETURN_TYPE ret = _lora.txBytes(_useCyphering ? pkt->getCyphered(pktbuf, _cypherKey) : pkt->get(), pktSize);

@@ -118,13 +118,16 @@ public:
     void hasJustBeenSent();                            /* used to mark the packet as sent */
     void print();                                      /* print infos and content of a packet */
 
+    uint8_t computeChecksum(); /* compute, set, and return a 1 byte xor checksum */
+    bool checkIntegity();      /* returns true when integrity check is ok */
+
 private:
     uint8_t *_pkt;       /* packet array, containing the header array and the data array */
     size_t _pktSize = 0; /* packet size which is the sum of headerSize and dataSize */
     /* header : protocol_version (3), QoS (1), pktSplit (1), pktType (3), 
     paddingCount (8), 
-    source dev ID (8), 
-    dest dev ID (8), 
+    futur use (8), 
+    pkt checksum (8), 
     pktNumber (8) */
     uint8_t *_header;                /* pointer to the part of the packet array that represents the header */
     static const size_t _headerSize; /* header size (fixed) */

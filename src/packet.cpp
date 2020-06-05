@@ -16,9 +16,9 @@
 
 const size_t Packet::_headerSize = 5; /* the header size is const. Header is defined as shown below */
 /* header : protocol_version (3), QoS (1), pktSplit (1), pktType (3), 
-    futurUse (8), 
-    source dev ID (8), 
-    dest dev ID (8), 
+    paddingCount (8), 
+    futur use (8), 
+    pkt checksum (8), 
     pktNumber (8) */
 
 static void crypt(esp_aes_context *ctx, int mode, size_t length, const unsigned char *input, unsigned char *output)
@@ -74,6 +74,7 @@ Packet &Packet::operator=(const Packet &pkt)
     _maxRetry = pkt._maxRetry;
     _dataSize = pkt._dataSize;
     _pktSize = pkt._pktSize;
+    _paddingCount = pkt._paddingCount;
     delete[] _pkt;
     _pkt = new uint8_t[_pktSize];
     _header = _pkt;
@@ -159,4 +160,45 @@ uint8_t *Packet::getCyphered(uint8_t *pktCyphered, String cypherKey)
     esp_aes_setkey(&ctx, key, 256);
     crypt(&ctx, ESP_AES_ENCRYPT, _pktSize, _pkt, pktCyphered);
     return pktCyphered;
+}
+
+static uint8_t checksum(uint8_t *data, size_t size)
+{
+    uint8_t ret = 0;
+    for (int i = 0; i < size; ++i)
+    {
+        ret ^= data[i];
+    }
+    return ret;
+}
+
+uint8_t Packet::computeChecksum()
+{
+    uint8_t sum = checksum(_pkt, _pktSize);
+    _header[3] = sum;
+    return sum;
+}
+
+bool Packet::checkIntegity()
+{
+    // checksum of the packet should be 0
+    if (checksum(_pkt, _pktSize) != 0)
+    {
+        LOG("INTEGRITY ERROR : wrong checksum!");
+        return false;
+    }
+    // packet type should be known
+    if (!(getType() == Packet::DATA || getType() == Packet::PING || getType() == Packet::OTA || getType() == Packet::ACK))
+    {
+        LOG("INTEGRITY ERROR : Unknown packet type!");
+        return false;
+    }
+    // packet type should be known
+    if (!(getProtocolVersion() == Packet::VERSION_1))
+    {
+        LOG("INTEGRITY ERROR : Unknown protocol version!");
+        return false;
+    }
+
+    return true;
 }
