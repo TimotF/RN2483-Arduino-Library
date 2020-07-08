@@ -1,18 +1,25 @@
 #include "lora.h"
+#include "RemoteDebug.h"
 
-#if 1
-#define LOG(f_, ...)                              \
-    {                                             \
-        Serial.printf("[LoRa] [%ld] ", millis()); \
-        Serial.printf((f_), ##__VA_ARGS__);       \
-        Serial.printf("\n");                      \
-    }
-#else
-#define LOG(f_, ...) \
-    {                \
-        NOP();       \
-    }
+#ifndef DEBUG_DISABLED
+extern RemoteDebug Debug;
+#elif defined DEBUG_SERIAL
+  #undef debugA
+  #undef debugP
+  #undef debugV
+  #undef debugD
+  #undef debugI
+  #undef debugW
+  #undef debugE
+  #define debugA(fmt, ...) Serial.printf("[A][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugP(fmt, ...) Serial.printf("[P][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugV(fmt, ...) Serial.printf("[V][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugD(fmt, ...) Serial.printf("[D][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugI(fmt, ...) Serial.printf("[I][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugW(fmt, ...) Serial.printf("[W][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugE(fmt, ...) Serial.printf("[E][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #endif
+
 
 uint8_t LoRa::_pktCounter = 0;
 
@@ -45,7 +52,7 @@ bool LoRa::begin(String sf, const bool &useP2P)
     }
     else
     {
-        LOG("Error! unknown sf! Using SF7 as default value");
+        debugE("Error! unknown sf! Using SF7 as default value");
         _sf = "sf7";
         _minListeningTime = MIN_LISTENING_TIME_SF7;
     }
@@ -94,25 +101,22 @@ void LoRa::loop()
                                              /* Then, process received msg */
             _lastPktReicvTime = millis();
 
-            LOG("received msg with snr %d", _snr);
+            debugV("received msg with snr %d", _snr);
 
             Packet pkt;
             if (_useCyphering)
                 pkt = Packet::buildPktFromBase16str(received, _cypherKey);
             else
                 pkt = Packet::buildPktFromBase16str(received);
-            // printPkt(pkt);
-            // LOG("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());
-            //TODO : drop packets that do not belong to us
 
             if(!pkt.checkIntegity()){
-                LOG("Integrity error in received packet");
+                debugE("Integrity error in received packet");
                 break;
             }
 
             if (pkt.getQoS() == Packet::AT_LEAST_ONE_PACKET) /* we need to send an ack */
             {
-                // LOG("Received pkt requires ACK repply");
+                debugV("Received pkt requires ACK repply");
                 createACK(pkt.getPktNumber());
                 _state = GO_TO_TX;
             }
@@ -120,32 +124,32 @@ void LoRa::loop()
             {
                 if (pkt.getDataSize() != 0)
                 {
-                    LOG("[IN] Error : received ACK with payload!");
+                    debugE("[IN] Error : received ACK with payload!");
                 }
                 else
                 {
-                    // LOG("[q=%d][IN][ACK%d]", getNbPktInQueue(), pkt.getPktNumber());
+                    debugV("[q=%d][IN][ACK%d]", getNbPktInQueue(), pkt.getPktNumber());
                     removePkt(pkt.getPktNumber());
                 }
             }
             else
             {
-                // LOG("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());
+                debugV("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());
                 if (_lastPktReceived == pkt)
                 {
-                    LOG("Received dupplicate packet!");
+                    debugW("Received dupplicate packet!");
                 }
                 else
                 {
                     if (pkt.isSplit())
                     {
-                        LOG("received split packet!");
+                        debugI("received split packet!");
                         _splitPktQueue.push_back(pkt);
                         _hasSplitPacketsInBuffer = true;
                     }
                     else if (_hasSplitPacketsInBuffer)
                     {
-                        LOG("received last split packet!");
+                        debugI("received last split packet!");
                         _splitPktQueue.push_back(pkt);
                         std::vector<Packet>::iterator it = _splitPktQueue.begin();
                         size_t dataSize = 0;
@@ -156,17 +160,17 @@ void LoRa::loop()
                             dataSize += it->getDataSize();
                             if (it->getType() != pktType)
                             {
-                                LOG("Warning! met packet type inconsistency when rebuilding split packet...");
+                                debugW("met packet type inconsistency when rebuilding split packet...");
                             }
                             if (it->getPktNumber() != (pktNb + 1))
                             {
-                                LOG("Warning! pkt number inconsistency : current nb is %d while last nb is %d", it->getPktNumber(), pktNb);
+                                debugW("pkt number inconsistency : current nb is %d while last nb is %d", it->getPktNumber(), pktNb);
                             }
 
                             pktType = it->getType();
                             pktNb = it->getPktNumber();
                         }
-                        LOG("total datasize for split packet is %d", dataSize);
+                        debugD("total datasize for split packet is %d", dataSize);
                         uint8_t data[dataSize];
                         size_t dataIndex = 0;
                         for (it = _splitPktQueue.begin(); it != _splitPktQueue.end(); ++it)
@@ -178,14 +182,14 @@ void LoRa::loop()
                         _hasSplitPacketsInBuffer = false;
                         if (_reicvCallback != NULL)
                         {
-                            LOG("Total retrieved payload : %d bytes", dataIndex);
+                            debugD("Total retrieved payload : %d bytes", dataIndex);
                             _reicvCallback(data, dataIndex, pktType);
                         }
                     }
                     else if (_reicvCallback != NULL)
                     {
                         if (_lastPktReceived.getPktNumber() != (pkt.getPktNumber() - 1))
-                            LOG("Missing packet !!!");
+                            debugW("Missing packet !!!");
                         _reicvCallback(pkt.getData(), pkt.getDataSize(), pkt.getType());
                     }
                 }
@@ -210,7 +214,7 @@ void LoRa::loop()
         }
         default: /* should never get inside */
         {
-            LOG("WTF??")
+            debugE("WTF??");
             _lora.setPassiveRxP2P();
             break;
         }
@@ -227,10 +231,10 @@ void LoRa::loop()
     {
         _state = GO_TO_TX;
         std::vector<Packet>::iterator pkt = hasPktToSend();
-        // LOG("[q=%d][OUT][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt->getType(), pkt->getPktNumber());
+        debugV("[q=%d][OUT][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt->getType(), pkt->getPktNumber());
         if (pkt == _packetsQueue.end())
         {
-            LOG("ERROR : trying to send non existing packet!");
+            debugE("trying to send non existing packet!");
             break;
         }
         pkt->computeChecksum();
@@ -261,7 +265,7 @@ void LoRa::loop()
             }
             default:
             {
-                LOG("WTF! QoS is unknown!!");
+                debugW("WTF! QoS is unknown!!");
                 break;
             }
             }
@@ -270,7 +274,7 @@ void LoRa::loop()
         }
         default:
         {
-            LOG("WTF! received code %d", ret);
+            debugW("WTF! received code %d", ret);
         }
         }
 
@@ -328,7 +332,7 @@ bool LoRa::formatData(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYP
         pkt.setProtocolVersion(Packet::VERSION_1);
         pkt.setType(pktType);
         pkt.setSplit(split);
-        // LOG("Put pkt %d in sending queue", _pktCounter - 1);
+        debugD("Put pkt %d in sending queue", _pktCounter - 1);
         xSemaphoreTake(_pktQueueMutex, portMAX_DELAY);
         if (pktType == Packet::OTA)
         {
@@ -345,17 +349,17 @@ bool LoRa::formatData(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYP
             _packetsQueue.push_back(pkt);
         }
         xSemaphoreGive(_pktQueueMutex);
-        LOG("Added packet of size %d to the stack", dataSize);
+        debugD("Added packet of size %d to the stack", dataSize);
         return true;
     }
     else /* data must be split into multiple packets */
     {
         // if (dataSize > 2048)
         // {
-        //     LOG("cannot send this packet because it has more than 2048 bytes in it !");
+        //     debugE("cannot send this packet because it has more than 2048 bytes in it !");
         //     return false;
         // }
-        LOG("data size is %d, must be split into several packets...", dataSize);
+        debugD("data size is %d, must be split into several packets...", dataSize);
         for (int dataIndex = 0; dataIndex < dataSize; dataIndex += _maxPktSize)
         {
             if (dataSize - dataIndex > _maxPktSize)
@@ -422,7 +426,7 @@ std::vector<Packet>::iterator LoRa::hasPktToSend()
             {
                 if (pkt->getSent() <= pkt->getMaxRetry())
                 {
-                    // LOG("No ack, retry sending pkt %d", pkt->getPktNumber());
+                    debugW("No ack, retry sending pkt %d", pkt->getPktNumber());
                     xSemaphoreGive(_pktQueueMutex);
                     return pkt;
                 }
@@ -446,7 +450,7 @@ void LoRa::cleanUpPacketQueue()
     {
         if ((millis() - pkt->getSentTimestamp() >= pkt->getTimeout()) && (pkt->getSent() > pkt->getMaxRetry())) /* Too many retries, dropping packet */
         {
-            LOG("Too many retries, dropping pkt %d", pkt->getPktNumber());
+            debugW("Too many retries, dropping pkt %d", pkt->getPktNumber());
             _packetsQueue.erase(pkt--);
             break;
         }
@@ -458,7 +462,7 @@ void LoRa::useCyphering(String key)
 {
     if (key.length() != 32)
     {
-        LOG("cannot use a key of length %d", key.length());
+        debugE("cannot use a key of length %d", key.length());
         return;
     }
     _cypherKey = String(key);

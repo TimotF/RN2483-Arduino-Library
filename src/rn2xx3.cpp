@@ -9,19 +9,25 @@
 
 #include "Arduino.h"
 #include "rn2xx3.h"
+#include "RemoteDebug.h"
 
-#if 1
-#define LOG(f_, ...)                          \
-  {                                           \
-    Serial.printf("[LoRa] [%ld] ", millis()); \
-    Serial.printf((f_), ##__VA_ARGS__);       \
-    Serial.printf("\n");                      \
-  }
-#else
-#define LOG(f_, ...) \
-  {                  \
-    NOP();           \
-  }
+#ifndef DEBUG_DISABLED
+extern RemoteDebug Debug;
+#elif defined DEBUG_SERIAL
+  #undef debugA
+  #undef debugP
+  #undef debugV
+  #undef debugD
+  #undef debugI
+  #undef debugW
+  #undef debugE
+  #define debugA(fmt, ...) Serial.printf("[A][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugP(fmt, ...) Serial.printf("[P][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugV(fmt, ...) Serial.printf("[V][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugD(fmt, ...) Serial.printf("[D][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugI(fmt, ...) Serial.printf("[I][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugW(fmt, ...) Serial.printf("[W][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugE(fmt, ...) Serial.printf("[E][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #endif
 
 extern "C"
@@ -65,10 +71,10 @@ String rn2xx3::sysver()
 
 RN2xx3_t rn2xx3::configureModuleType()
 {
-  LOG("configure module type : ");
+  debugI("configure module type : ");
   String version = sysver();
   String model = version.substring(2, 6);
-  LOG("received %s => type = %s", version.c_str(), model.c_str());
+  debugI("received %s => type = %s", version.c_str(), model.c_str());
   switch (model.toInt())
   {
   case 2903:
@@ -148,7 +154,7 @@ bool rn2xx3::initP2P(String sf)
     break;
   case RN2483:
     sendRawCommand(F("radio set freq 869100000"));
-    LOG("Found RN2483");
+    debugI("Found RN2483");
     break;
   default:
     // we shouldn't go forward with the init
@@ -183,7 +189,7 @@ int rn2xx3::timedRead()
     }
     delay(1); /* RTOS delay */
   } while (millis() - startMillis < _serial.getTimeout());
-  LOG("serial timeout");
+  debugW("serial timeout");
   return -1; // -1 indicates timeout
 }
 
@@ -202,16 +208,16 @@ String rn2xx3::readStringUntil(char terminator)
 bool rn2xx3::setPassiveRxP2P()
 {
   String receivedData;
-  LOG("Listening for incoming messages...");
+  debugD("Listening for incoming messages...");
   receivedData = sendRawCommand(F("radio rx 0"));
   if (receivedData.startsWith("ok"))
   {
-    LOG("Module listening");
+    debugD("Module listening");
     return true;
   }
   else
   {
-    LOG("Error, received %s", receivedData.c_str());
+    debugE("Error, received %s", receivedData.c_str());
     return false;
   }
 }
@@ -219,16 +225,16 @@ bool rn2xx3::setPassiveRxP2P()
 bool rn2xx3::stopPassiveRxP2P()
 {
   String receivedData;
-  LOG("Stopping Rx listening...");
+  debugD("Stopping Rx listening...");
   receivedData = sendRawCommand(F("radio rxstop"));
   if (receivedData.startsWith("ok"))
   {
-    LOG("OK");
+    debugD("OK");
     return true;
   }
   else
   {
-    LOG("Error, received %s", receivedData.c_str());
+    debugE("Error, received %s", receivedData.c_str());
     return false;
   }
 }
@@ -243,7 +249,7 @@ TX_RETURN_TYPE rn2xx3::listenLoop()
   String receivedData = readStringUntil('\n');
 
   if (receivedData.length() > 0)
-    LOG("received data : %s", receivedData.c_str());
+    debugD("received data : %s", receivedData.c_str());
 
   if (receivedData.startsWith("radio_err"))
   {
@@ -261,7 +267,7 @@ TX_RETURN_TYPE rn2xx3::listenLoop()
     return TX_WITH_RX;
   }
 
-  LOG("UNKNOWN msg : %s", receivedData.c_str());
+  debugD("UNKNOWN msg : %s", receivedData.c_str());
   return UNKNOWN_MSG;
 }
 
@@ -269,13 +275,13 @@ TX_RETURN_TYPE rn2xx3::listenP2P()
 {
   String receivedData;
   bool mustStop = false;
-  LOG("Listening for incoming messages...");
+  debugD("Listening for incoming messages...");
   receivedData = sendRawCommand(F("radio rx 0")); // don't put this in receiveddata we want to ignore the first ok
   while (!mustStop)
   {
     receivedData = readStringUntil('\n');
     if (receivedData.length() > 0)
-      LOG("received data : %s", receivedData.c_str());
+      debugD("received data : %s", receivedData.c_str());
     if (receivedData.startsWith("radio_err"))
     {
       return RADIO_LISTEN_WITHOUT_RX; // timeout
@@ -292,7 +298,7 @@ TX_RETURN_TYPE rn2xx3::listenP2P()
       return TX_WITH_RX;
     }
   }
-  LOG("UNKNOWN msg : %s", receivedData.c_str());
+  debugD("UNKNOWN msg : %s", receivedData.c_str());
   return UNKNOWN_MSG;
 }
 
@@ -573,7 +579,7 @@ TX_RETURN_TYPE rn2xx3::txCommand(const String &command, const String &data, bool
       return TX_FAIL;
     }
 
-    LOG("Sending command %s%s", command.c_str(), data.c_str());
+    debugD("Sending command %s%s", command.c_str(), data.c_str());
     _serial.print(command);
     if (shouldEncode)
     {
@@ -586,7 +592,7 @@ TX_RETURN_TYPE rn2xx3::txCommand(const String &command, const String &data, bool
     _serial.println();
 
     String receivedData = readStringUntil('\n');
-    LOG("received %s", receivedData.c_str());
+    debugD("received %s", receivedData.c_str());
 
     switch (determineReceivedDataType(receivedData))
     {
@@ -596,7 +602,7 @@ TX_RETURN_TYPE rn2xx3::txCommand(const String &command, const String &data, bool
       receivedData = readStringUntil('\n');
       _serial.setTimeout(2000);
 
-      LOG("ok -> received %s", receivedData.c_str());
+      debugD("ok -> received %s", receivedData.c_str());
 
       switch (determineReceivedDataType(receivedData))
       {
@@ -624,7 +630,7 @@ TX_RETURN_TYPE rn2xx3::txCommand(const String &command, const String &data, bool
       case rn2xx3::invalid_data_len:
       {
         //this should never happen if the prototype worked
-        LOG("Invalid data length");
+        debugD("Invalid data length");
         send_success = true;
         return TX_FAIL;
       }
@@ -647,7 +653,7 @@ TX_RETURN_TYPE rn2xx3::txCommand(const String &command, const String &data, bool
       case rn2xx3::radio_err:
       {
         //This should never happen. If it does, something major is wrong.
-        LOG("radio Error");
+        debugE("radio Error");
         init();
         break;
       }
@@ -845,7 +851,7 @@ String rn2xx3::sendRawCommand(const String &command)
     _lastErrorInvalidParam = command;
   }
 
-  LOG("sent command %s => %s", command.c_str(), ret.c_str());
+  debugD("sent command %s => %s", command.c_str(), ret.c_str());
 
   return ret;
 }

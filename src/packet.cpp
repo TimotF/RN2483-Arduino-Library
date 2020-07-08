@@ -1,17 +1,23 @@
 #include "packet.h"
+#include "RemoteDebug.h"
 
-#if 1
-#define LOG(f_, ...)                                \
-    {                                               \
-        Serial.printf("[Packet] [%ld] ", millis()); \
-        Serial.printf((f_), ##__VA_ARGS__);         \
-        Serial.printf("\n");                        \
-    }
-#else
-#define LOG(f_, ...) \
-    {                \
-        NOP();       \
-    }
+#ifndef DEBUG_DISABLED
+extern RemoteDebug Debug;
+#elif defined DEBUG_SERIAL
+  #undef debugA
+  #undef debugP
+  #undef debugV
+  #undef debugD
+  #undef debugI
+  #undef debugW
+  #undef debugE
+  #define debugA(fmt, ...) Serial.printf("[A][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugP(fmt, ...) Serial.printf("[P][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugV(fmt, ...) Serial.printf("[V][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugD(fmt, ...) Serial.printf("[D][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugI(fmt, ...) Serial.printf("[I][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugW(fmt, ...) Serial.printf("[W][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+  #define debugE(fmt, ...) Serial.printf("[E][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #endif
 
 const size_t Packet::_headerSize = 5; /* the header size is const. Header is defined as shown below */
@@ -26,7 +32,7 @@ static void crypt(esp_aes_context *ctx, int mode, size_t length, const unsigned 
 
     if (length % 16 != 0)
     {
-        LOG("length not a multiple of 16, padding required!");
+        debugE("length not a multiple of 16, padding required!");
         return;
     }
 
@@ -94,7 +100,7 @@ Packet Packet::buildPktFromBase16str(const String &s, const String cypherKey)
 
     if (cypherKey != "notUsed" && outputLength % 16 != 0)
     {
-        LOG("Error : cannot build this packet!");
+        debugE("cannot build this packet!");
         return Packet();
     }
 
@@ -121,11 +127,11 @@ Packet Packet::buildPktFromBase16str(const String &s, const String cypherKey)
     }
     else if (cypherKey != "notUsed")
     {
-        LOG("incorrect cypher key length (%d)", cypherKey.length());
+        debugE("incorrect cypher key length (%d)", cypherKey.length());
     }
 
     Packet ret = Packet(outputLength, receivedData, true);
-    LOG("Decyphered pkt : total length = %d, datalength = %d, paddingLength = %d", ret.getPktSize(), ret.getDataSize(), ret._paddingCount);
+    debugD("Decyphered pkt : total length = %d, datalength = %d, paddingLength = %d", ret.getPktSize(), ret.getDataSize(), ret._paddingCount);
     ret.print();
     return ret;
 }
@@ -133,7 +139,7 @@ Packet Packet::buildPktFromBase16str(const String &s, const String cypherKey)
 void Packet::hasJustBeenSent()
 {
     _sent++;
-    LOG("pkt was sent %d times", _sent);
+    debugD("pkt was sent %d times", _sent);
     _sentTimestamp = millis();
 }
 
@@ -184,19 +190,19 @@ bool Packet::checkIntegity()
     // checksum of the packet should be 0
     if (checksum(_pkt, _pktSize) != 0)
     {
-        LOG("INTEGRITY ERROR : wrong checksum!");
+        debugE("wrong checksum!");
         return false;
     }
     // packet type should be known
     if (!(getType() == Packet::DATA || getType() == Packet::PING || getType() == Packet::OTA || getType() == Packet::ACK))
     {
-        LOG("INTEGRITY ERROR : Unknown packet type!");
+        debugE("Unknown packet type!");
         return false;
     }
     // packet type should be known
     if (!(getProtocolVersion() == Packet::VERSION_1))
     {
-        LOG("INTEGRITY ERROR : Unknown protocol version!");
+        debugE("Unknown protocol version!");
         return false;
     }
 
