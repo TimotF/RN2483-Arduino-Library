@@ -29,7 +29,7 @@ enum LoraStates /* LoRa States difinition */
 class LoRa
 {
 public:
-    LoRa(Stream &serial) : _lora(serial) {}                    /* LoRa constructor, requires the serial stream to use */
+    LoRa(Stream &serial, int loraResetPin = -1) : _lora(serial,loraResetPin){}                    /* LoRa constructor, requires the serial stream to use */
     bool begin(String sf = "sf7", const bool &useP2P = false); /* method to initialize the LoRa object. To call after declaration of the LoRa object */
     void loop();                                               /* LoRa loop, to call in a regular basis */
 

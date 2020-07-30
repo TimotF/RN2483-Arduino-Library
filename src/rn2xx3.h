@@ -51,7 +51,7 @@ public:
      * A simplified constructor taking only a Stream ({Software/Hardware}Serial) object.
      * The serial port should already be initialised when initialising this library.
      */
-   rn2xx3(Stream &serial);
+   rn2xx3(Stream &serial, int resetPin = -1);
 
    /*
      * Transmit the correct sequence to the rn2xx3 to trigger its autobauding feature.
@@ -288,6 +288,8 @@ private:
    String _sf;
 
    bool _radio2radio = false;
+
+   int _resetPin = -1;
 
    /*
      * Auto configure for either RN2903 or RN2483 module

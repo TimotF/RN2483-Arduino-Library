@@ -14,20 +14,20 @@
 #ifndef DEBUG_DISABLED
 extern RemoteDebug Debug;
 #elif defined DEBUG_SERIAL
-  #undef debugA
-  #undef debugP
-  #undef debugV
-  #undef debugD
-  #undef debugI
-  #undef debugW
-  #undef debugE
-  #define debugA(fmt, ...) Serial.printf("[A][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-  #define debugP(fmt, ...) Serial.printf("[P][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-  #define debugV(fmt, ...) Serial.printf("[V][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-  #define debugD(fmt, ...) Serial.printf("[D][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-  #define debugI(fmt, ...) Serial.printf("[I][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-  #define debugW(fmt, ...) Serial.printf("[W][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-  #define debugE(fmt, ...) Serial.printf("[E][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#undef debugA
+#undef debugP
+#undef debugV
+#undef debugD
+#undef debugI
+#undef debugW
+#undef debugE
+#define debugA(fmt, ...) Serial.printf("[A][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugP(fmt, ...) Serial.printf("[P][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugV(fmt, ...) Serial.printf("[V][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugD(fmt, ...) Serial.printf("[D][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugI(fmt, ...) Serial.printf("[I][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugW(fmt, ...) Serial.printf("[W][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugE(fmt, ...) Serial.printf("[E][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #endif
 
 extern "C"
@@ -39,7 +39,7 @@ extern "C"
 /*
   @param serial Needs to be an already opened Stream ({Software/Hardware}Serial) to write to and read from.
 */
-rn2xx3::rn2xx3(Stream &serial) : _serial(serial)
+rn2xx3::rn2xx3(Stream &serial, int resetPin) : _serial(serial), _resetPin(resetPin)
 {
   _serial.setTimeout(2000);
 }
@@ -114,6 +114,15 @@ String rn2xx3::deveui()
 
 bool rn2xx3::init()
 {
+  if (_resetPin != -1)
+  {
+    pinMode(_resetPin, OUTPUT);
+    digitalWrite(_resetPin, HIGH);
+    delay(100);
+    digitalWrite(_resetPin, LOW);
+    delay(100);
+  }
+
   if (_radio2radio)
     return initP2P(_sf);
 
@@ -133,6 +142,14 @@ bool rn2xx3::init()
 
 bool rn2xx3::initP2P(String sf)
 {
+  if (_resetPin != -1)
+  {
+    pinMode(_resetPin, OUTPUT);
+    digitalWrite(_resetPin, HIGH);
+    delay(100);
+    digitalWrite(_resetPin, LOW);
+    delay(100);
+  }
   _sf = sf;
   sendRawCommand(F("sys reset"));
   _radio2radio = true;
