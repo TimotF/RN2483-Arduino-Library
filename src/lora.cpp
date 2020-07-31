@@ -4,22 +4,21 @@
 #ifndef DEBUG_DISABLED
 extern RemoteDebug Debug;
 #elif defined DEBUG_SERIAL
-  #undef debugA
-  #undef debugP
-  #undef debugV
-  #undef debugD
-  #undef debugI
-  #undef debugW
-  #undef debugE
-  #define debugA(fmt, ...) Serial.printf("[A][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-  #define debugP(fmt, ...) Serial.printf("[P][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-  #define debugV(fmt, ...) Serial.printf("[V][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-  #define debugD(fmt, ...) Serial.printf("[D][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-  #define debugI(fmt, ...) Serial.printf("[I][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-  #define debugW(fmt, ...) Serial.printf("[W][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-  #define debugE(fmt, ...) Serial.printf("[E][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#undef debugA
+#undef debugP
+#undef debugV
+#undef debugD
+#undef debugI
+#undef debugW
+#undef debugE
+#define debugA(fmt, ...) Serial.printf("[A][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugP(fmt, ...) Serial.printf("[P][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugV(fmt, ...) Serial.printf("[V][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugD(fmt, ...) Serial.printf("[D][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugI(fmt, ...) Serial.printf("[I][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugW(fmt, ...) Serial.printf("[W][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugE(fmt, ...) Serial.printf("[E][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #endif
-
 
 uint8_t LoRa::_pktCounter = 0;
 
@@ -97,6 +96,7 @@ void LoRa::loop()
         {
             String received = _lora.getRx(); /* get received msg */
             _snr = _lora.getSNR();           /* update SNR */
+            toggleLed();
             _lora.setPassiveRxP2P();         /* go back into rx mode */
                                              /* Then, process received msg */
             _lastPktReicvTime = millis();
@@ -109,7 +109,8 @@ void LoRa::loop()
             else
                 pkt = Packet::buildPktFromBase16str(received);
 
-            if(!pkt.checkIntegity()){
+            if (!pkt.checkIntegity())
+            {
                 debugE("Integrity error in received packet");
                 break;
             }
@@ -467,4 +468,14 @@ void LoRa::useCyphering(String key)
     }
     _cypherKey = String(key);
     _useCyphering = true;
+}
+
+void LoRa::toggleLed()
+{
+    if (_loraLedGpio.length() > 0)
+    {
+        _lora.sendRawCommand("sys set pinmode " + _loraLedGpio + " digout");
+        _ledState = !_ledState;
+        _lora.sendRawCommand("sys set pindig " + _loraLedGpio + " " + String(_ledState));
+    }
 }
