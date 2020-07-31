@@ -148,7 +148,7 @@ bool rn2xx3::initP2P(String sf)
     digitalWrite(_resetPin, HIGH);
     delay(100);
     digitalWrite(_resetPin, LOW);
-    delay(100);
+    delay(1000);
   }
   _sf = sf;
   sendRawCommand(F("sys reset"));
@@ -159,8 +159,8 @@ bool rn2xx3::initP2P(String sf)
   //clear serial buffer
   while (_serial.available())
     _serial.read();
-
   configureModuleType();
+  sendRawCommand(F("mac pause"));
   sendRawCommand(F("mac pause"));
   sendRawCommand(F("radio set mod lora"));
 
