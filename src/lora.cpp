@@ -3,21 +3,53 @@
 
 #ifndef DEBUG_DISABLED
 extern RemoteDebug Debug;
-#elif defined DEBUG_SERIAL
-#undef debugA
-#undef debugP
-#undef debugV
-#undef debugD
-#undef debugI
-#undef debugW
-#undef debugE
-#define debugA(fmt, ...) Serial.printf("[A][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-#define debugP(fmt, ...) Serial.printf("[P][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-#define debugV(fmt, ...) Serial.printf("[V][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-#define debugD(fmt, ...) Serial.printf("[D][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-#define debugI(fmt, ...) Serial.printf("[I][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-#define debugW(fmt, ...) Serial.printf("[W][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-#define debugE(fmt, ...) Serial.printf("[E][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#else
+    #undef debugA
+    #undef debugP
+    #undef debugV
+    #undef debugD
+    #undef debugI
+    #undef debugW
+    #undef debugE
+    #ifdef DEBUG_SERIAL_LORA
+        #if DEBUG_SERIAL_LORA >= 4
+            #define debugA(fmt, ...) Serial.printf("[A][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+            #define debugP(fmt, ...) Serial.printf("[P][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+            #define debugV(fmt, ...) Serial.printf("[V][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+        #else
+            #define debugA(fmt, ...) 
+            #define debugP(fmt, ...) 
+            #define debugV(fmt, ...) 
+        #endif
+        #if DEBUG_SERIAL_LORA >= 3
+            #define debugD(fmt, ...) Serial.printf("[D][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+        #else
+            #define debugD(fmt, ...)
+        #endif
+        #if DEBUG_SERIAL_LORA >= 2
+            #define debugI(fmt, ...) Serial.printf("[I][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+        #else
+            #define debugI(fmt, ...)
+        #endif
+        #if DEBUG_SERIAL_LORA >= 1
+            #define debugW(fmt, ...) Serial.printf("[W][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+        #else
+            #define debugW(fmt, ...)
+        #endif
+        #if DEBUG_SERIAL_LORA >= 0
+            #define debugE(fmt, ...) Serial.printf("[E][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+        #else
+            #define debugE(fmt, ...)
+        #endif
+    #else
+        #define debugA(fmt, ...) 
+        #define debugP(fmt, ...) 
+        #define debugV(fmt, ...) 
+        #define debugD(fmt, ...) 
+        #define debugI(fmt, ...) 
+        #define debugW(fmt, ...) 
+        #define debugE(fmt, ...) 
+    #endif
 #endif
 
 uint8_t LoRa::_pktCounter = 0;
