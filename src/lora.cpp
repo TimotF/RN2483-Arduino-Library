@@ -4,52 +4,52 @@
 #ifndef DEBUG_DISABLED
 extern RemoteDebug Debug;
 #else
-    #undef debugA
-    #undef debugP
-    #undef debugV
-    #undef debugD
-    #undef debugI
-    #undef debugW
-    #undef debugE
-    #ifdef DEBUG_SERIAL_LORA
-        #if DEBUG_SERIAL_LORA >= 4
-            #define debugA(fmt, ...) Serial.printf("[A][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-            #define debugP(fmt, ...) Serial.printf("[P][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-            #define debugV(fmt, ...) Serial.printf("[V][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-        #else
-            #define debugA(fmt, ...) 
-            #define debugP(fmt, ...) 
-            #define debugV(fmt, ...) 
-        #endif
-        #if DEBUG_SERIAL_LORA >= 3
-            #define debugD(fmt, ...) Serial.printf("[D][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-        #else
-            #define debugD(fmt, ...)
-        #endif
-        #if DEBUG_SERIAL_LORA >= 2
-            #define debugI(fmt, ...) Serial.printf("[I][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-        #else
-            #define debugI(fmt, ...)
-        #endif
-        #if DEBUG_SERIAL_LORA >= 1
-            #define debugW(fmt, ...) Serial.printf("[W][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-        #else
-            #define debugW(fmt, ...)
-        #endif
-        #if DEBUG_SERIAL_LORA >= 0
-            #define debugE(fmt, ...) Serial.printf("[E][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-        #else
-            #define debugE(fmt, ...)
-        #endif
-    #else
-        #define debugA(fmt, ...) 
-        #define debugP(fmt, ...) 
-        #define debugV(fmt, ...) 
-        #define debugD(fmt, ...) 
-        #define debugI(fmt, ...) 
-        #define debugW(fmt, ...) 
-        #define debugE(fmt, ...) 
-    #endif
+#undef debugA
+#undef debugP
+#undef debugV
+#undef debugD
+#undef debugI
+#undef debugW
+#undef debugE
+#ifdef DEBUG_SERIAL_LORA
+#if DEBUG_SERIAL_LORA >= 4
+#define debugA(fmt, ...) Serial.printf("[A][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugP(fmt, ...) Serial.printf("[P][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugV(fmt, ...) Serial.printf("[V][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#else
+#define debugA(fmt, ...)
+#define debugP(fmt, ...)
+#define debugV(fmt, ...)
+#endif
+#if DEBUG_SERIAL_LORA >= 3
+#define debugD(fmt, ...) Serial.printf("[D][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#else
+#define debugD(fmt, ...)
+#endif
+#if DEBUG_SERIAL_LORA >= 2
+#define debugI(fmt, ...) Serial.printf("[I][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#else
+#define debugI(fmt, ...)
+#endif
+#if DEBUG_SERIAL_LORA >= 1
+#define debugW(fmt, ...) Serial.printf("[W][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#else
+#define debugW(fmt, ...)
+#endif
+#if DEBUG_SERIAL_LORA >= 0
+#define debugE(fmt, ...) Serial.printf("[E][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#else
+#define debugE(fmt, ...)
+#endif
+#else
+#define debugA(fmt, ...)
+#define debugP(fmt, ...)
+#define debugV(fmt, ...)
+#define debugD(fmt, ...)
+#define debugI(fmt, ...)
+#define debugW(fmt, ...)
+#define debugE(fmt, ...)
+#endif
 #endif
 
 uint8_t LoRa::_pktCounter = 0;
@@ -129,8 +129,8 @@ void LoRa::loop()
             String received = _lora.getRx(); /* get received msg */
             _snr = _lora.getSNR();           /* update SNR */
             toggleLed();
-            _lora.setPassiveRxP2P();         /* go back into rx mode */
-                                             /* Then, process received msg */
+            _lora.setPassiveRxP2P(); /* go back into rx mode */
+                                     /* Then, process received msg */
             _lastPktReicvTime = millis();
 
             debugV("received msg with snr %d", _snr);
@@ -493,12 +493,20 @@ void LoRa::cleanUpPacketQueue()
 
 void LoRa::useCyphering(String key)
 {
-    if (key.length() != 32)
+    if (key.length() < 32)
     {
         debugE("cannot use a key of length %d", key.length());
         return;
     }
-    _cypherKey = String(key);
+    if (key.length() > 32)
+    {
+        debugW("cyphering key too long (%d), cropping it", key.length());
+        _cypherKey = String(key.substring(0,32));
+    }
+    else
+    {
+        _cypherKey = String(key);
+    }
     _useCyphering = true;
 }
 
