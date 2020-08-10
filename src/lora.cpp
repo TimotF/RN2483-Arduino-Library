@@ -161,13 +161,13 @@ void LoRa::loop()
                 }
                 else
                 {
-                    debugV("[q=%d][IN][ACK%d]", getNbPktInQueue(), pkt.getPktNumber());
+                    debugD("[q=%d][IN][ACK%d]", getNbPktInQueue(), pkt.getPktNumber());
                     removePkt(pkt.getPktNumber());
                 }
             }
             else
             {
-                debugV("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());
+                debugD("[q=%d][IN][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getPktNumber());
                 if (_lastPktReceived == pkt)
                 {
                     debugW("Received dupplicate packet!");
@@ -264,7 +264,7 @@ void LoRa::loop()
     {
         _state = GO_TO_TX;
         std::vector<Packet>::iterator pkt = hasPktToSend();
-        debugV("[q=%d][OUT][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt->getType(), pkt->getPktNumber());
+        debugD("[q=%d][OUT][Type=%d] pkt nb = %d", getNbPktInQueue(), pkt->getType(), pkt->getPktNumber());
         if (pkt == _packetsQueue.end())
         {
             debugE("trying to send non existing packet!");
