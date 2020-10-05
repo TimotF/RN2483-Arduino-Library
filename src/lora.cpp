@@ -491,12 +491,12 @@ void LoRa::cleanUpPacketQueue()
     xSemaphoreGive(_pktQueueMutex);
 }
 
-void LoRa::useCyphering(String key)
+bool LoRa::useCyphering(String key)
 {
     if (key.length() < 32)
     {
         debugE("cannot use a key of length %d", key.length());
-        return;
+        return false;
     }
     if (key.length() > 32)
     {
@@ -508,14 +508,16 @@ void LoRa::useCyphering(String key)
         _cypherKey = String(key);
     }
     _useCyphering = true;
+    return true;
 }
 
-void LoRa::toggleLed()
+String LoRa::toggleLed()
 {
     if (_loraLedGpio.length() > 0)
     {
         _lora.sendRawCommand("sys set pinmode " + _loraLedGpio + " digout");
         _ledState = !_ledState;
-        _lora.sendRawCommand("sys set pindig " + _loraLedGpio + " " + String(_ledState));
+        return _lora.sendRawCommand("sys set pindig " + _loraLedGpio + " " + String(_ledState));
     }
+    return "FAIL";
 }

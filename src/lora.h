@@ -36,7 +36,7 @@ public:
     bool send(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType, bool ack = false, bool canBeDropped = false);                 /* method to send data via LoRa */
     void setReicvCallback(void (*reicvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType)) { _reicvCallback = reicvCallback; } /* set receive callback to call when a packet was just received */
 
-    void useCyphering(String key);
+    bool useCyphering(String key);
 
     void stopCyphering() { _useCyphering = false; }
 
@@ -51,7 +51,7 @@ public:
     int getSNR() { return _snr; }
 
     void attachLed(String gpio) { _loraLedGpio = gpio; }
-    void toggleLed(); /* remove a packet from the packet queue based on its packet number */
+    String toggleLed(); /* remove a packet from the packet queue based on its packet number */
 
 private:
     rn2xx3 _lora;              /* lora object to handle communication with lora module */

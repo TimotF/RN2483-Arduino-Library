@@ -230,7 +230,7 @@ bool Packet::checkIntegity()
         debugE("Unknown packet type!");
         return false;
     }
-    // packet type should be known
+    // packet version should be known
     if (!(getProtocolVersion() == Packet::VERSION_1))
     {
         debugE("Unknown protocol version!");
