@@ -33,7 +33,7 @@ public:
     bool begin(String sf = "sf7", const bool &useP2P = false);                   /* method to initialize the LoRa object. To call after declaration of the LoRa object */
     void loop();                                                                 /* LoRa loop, to call in a regular basis */
 
-    bool send(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType, bool ack = false);                                            /* method to send data via LoRa */
+    bool send(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType, bool ack = false, bool canBeDropped = false);                 /* method to send data via LoRa */
     void setReicvCallback(void (*reicvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType)) { _reicvCallback = reicvCallback; } /* set receive callback to call when a packet was just received */
 
     void useCyphering(String key);
@@ -51,7 +51,7 @@ public:
     int getSNR() { return _snr; }
 
     void attachLed(String gpio) { _loraLedGpio = gpio; }
-    void toggleLed();                                                                                   /* remove a packet from the packet queue based on its packet number */
+    void toggleLed(); /* remove a packet from the packet queue based on its packet number */
 
 private:
     rn2xx3 _lora;              /* lora object to handle communication with lora module */
@@ -85,7 +85,7 @@ private:
     void cleanUpPacketQueue();                                                                                          /* Check and removes the packets in the queue that were sent too many times */
     bool formatData(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType, bool ack, bool split = false); /* create a packet from the data passed in param, and put the new packet in the queue */
     void createACK(const uint8_t pktNb);                                                                                /* create an ACK packet and put it in the queue */
-    bool removePkt(uint8_t pktNb);   
+    bool removePkt(uint8_t pktNb);
 };
 
 #endif

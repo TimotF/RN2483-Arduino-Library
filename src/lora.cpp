@@ -97,13 +97,13 @@ bool LoRa::begin(String sf, const bool &useP2P)
     }
 }
 
-bool LoRa::send(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType, bool ack)
+bool LoRa::send(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType, bool ack, bool canBeDropped)
 {
 
     if ((data == NULL) | (dataSize == 0))
         return false;
 
-    if (pktType == Packet::DATA && getNbPktInQueue() > MAX_PKTS_IN_QUEUE) // we dont want to refuse any payload other than DATA
+    if (pktType == Packet::DATA && getNbPktInQueue() > MAX_PKTS_IN_QUEUE && canBeDropped) // we dont want to refuse any payload other than DATA
         return false;
 
     return formatData(data, dataSize, pktType, ack);
