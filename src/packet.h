@@ -100,8 +100,8 @@ public:
     size_t getHeaderSize() { return _headerSize; }                                                 /* getter for the header size */
     size_t getDataSize() { return _dataSize; }                                                     /* getter for the data size */
     bool isSplit() { return (_header[0] & 0x08) > 0; }                                             /* getter for the packet split flag */
-    uint8_t getSourceID() { return _header[2]; }                                                   /* getter for source ID */
-    uint8_t getDestID() { return _header[3]; }                                                     /* getter for dest ID */
+    uint8_t getSourceID() { return (_header[2] & 0xF0) >> 4; }                                     /* getter for source ID */
+    uint8_t getDestID() { return _header[2] & 0x0F; }                                              /* getter for dest ID */
     uint8_t getPktNumber() { return _header[4]; }                                                  /* getter for the packet number*/
     uint8_t getSent() { return _sent; }                                                            /* get the number of times a packet was sent */
     uint8_t getMaxRetry() { return _maxRetry; }                                                    /* get the maximum number of times a packet can be resent if considered lost */
@@ -112,8 +112,8 @@ public:
     void setQoS(QoS qos);                              /* setter for QoS field */
     void setType(PACKET_TYPE type);                    /* Setter for pkt type field */
     void setSplit(bool split);                         /* setter for packet split flag */
-    void setSourceID(uint8_t id) { _header[2] = id; }  /* setter for SourceID */
-    void setDestID(uint8_t id) { _header[3] = id; }    /* setter for destID */
+    void setSourceID(uint8_t id);                      /* setter for SourceID */
+    void setDestID(uint8_t id);                        /* setter for destID */
     void setPktNumber(uint8_t nb) { _header[4] = nb; } /* setter for pkt number */
     void hasJustBeenSent();                            /* used to mark the packet as sent */
     void print();                                      /* print infos and content of a packet */
@@ -126,7 +126,7 @@ private:
     size_t _pktSize = 0; /* packet size which is the sum of headerSize and dataSize */
     /* header : protocol_version (3), QoS (1), pktSplit (1), pktType (3), 
     paddingCount (8), 
-    futur use (8), 
+    SourceID (4), DestID(4), 
     pkt checksum (8), 
     pktNumber (8) */
     uint8_t *_header;                /* pointer to the part of the packet array that represents the header */

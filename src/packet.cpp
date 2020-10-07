@@ -104,6 +104,18 @@ void Packet::setType(PACKET_TYPE type)
     _header[0] |= type & 0x07;
 }
 
+void Packet::setSourceID(uint8_t id)
+{
+    _header[2] &= 0x0F;
+    _header[2] |= (id & 0x0F)<<4;
+}
+
+void Packet::setDestID(uint8_t id)
+{
+    _header[2] &= 0xF0;
+    _header[2] |= id & 0x0F;
+}
+
 Packet &Packet::operator=(const Packet &pkt)
 {
     _sent = pkt._sent;
