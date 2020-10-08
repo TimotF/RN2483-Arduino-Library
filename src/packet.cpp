@@ -297,7 +297,8 @@ bool PktQueueTx::getNextPacket(Packet *p)
             {
                 if (pkt->getSent() <= pkt->getMaxRetry())
                 {
-                    p = &(*pkt);
+                    if (p != nullptr)
+                        *p = *pkt;
                     xSemaphoreGive(_mutex);
                     return true;
                 }
@@ -305,7 +306,8 @@ bool PktQueueTx::getNextPacket(Packet *p)
         }
         else
         {
-            p = &(*pkt);
+            if (p != nullptr)
+                *p = *pkt;
             xSemaphoreGive(_mutex);
             return true;
         }
