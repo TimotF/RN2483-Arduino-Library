@@ -4,52 +4,52 @@
 #ifndef DEBUG_DISABLED
 extern RemoteDebug Debug;
 #else
-    #undef debugA
-    #undef debugP
-    #undef debugV
-    #undef debugD
-    #undef debugI
-    #undef debugW
-    #undef debugE
-    #ifdef DEBUG_SERIAL_PACKET
-        #if DEBUG_SERIAL_PACKET >= 4
-            #define debugA(fmt, ...) Serial.printf("[A][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-            #define debugP(fmt, ...) Serial.printf("[P][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-            #define debugV(fmt, ...) Serial.printf("[V][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-        #else
-            #define debugA(fmt, ...) 
-            #define debugP(fmt, ...) 
-            #define debugV(fmt, ...) 
-        #endif
-        #if DEBUG_SERIAL_PACKET >= 3
-            #define debugD(fmt, ...) Serial.printf("[D][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-        #else
-            #define debugD(fmt, ...)
-        #endif
-        #if DEBUG_SERIAL_PACKET >= 2
-            #define debugI(fmt, ...) Serial.printf("[I][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-        #else
-            #define debugI(fmt, ...)
-        #endif
-        #if DEBUG_SERIAL_PACKET >= 1
-            #define debugW(fmt, ...) Serial.printf("[W][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-        #else
-            #define debugW(fmt, ...)
-        #endif
-        #if DEBUG_SERIAL_PACKET >= 0
-            #define debugE(fmt, ...) Serial.printf("[E][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
-        #else
-            #define debugE(fmt, ...)
-        #endif
-    #else
-        #define debugA(fmt, ...) 
-        #define debugP(fmt, ...) 
-        #define debugV(fmt, ...) 
-        #define debugD(fmt, ...) 
-        #define debugI(fmt, ...) 
-        #define debugW(fmt, ...) 
-        #define debugE(fmt, ...) 
-    #endif
+#undef debugA
+#undef debugP
+#undef debugV
+#undef debugD
+#undef debugI
+#undef debugW
+#undef debugE
+#ifdef DEBUG_SERIAL_PACKET
+#if DEBUG_SERIAL_PACKET >= 4
+#define debugA(fmt, ...) Serial.printf("[A][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugP(fmt, ...) Serial.printf("[P][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#define debugV(fmt, ...) Serial.printf("[V][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#else
+#define debugA(fmt, ...)
+#define debugP(fmt, ...)
+#define debugV(fmt, ...)
+#endif
+#if DEBUG_SERIAL_PACKET >= 3
+#define debugD(fmt, ...) Serial.printf("[D][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#else
+#define debugD(fmt, ...)
+#endif
+#if DEBUG_SERIAL_PACKET >= 2
+#define debugI(fmt, ...) Serial.printf("[I][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#else
+#define debugI(fmt, ...)
+#endif
+#if DEBUG_SERIAL_PACKET >= 1
+#define debugW(fmt, ...) Serial.printf("[W][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#else
+#define debugW(fmt, ...)
+#endif
+#if DEBUG_SERIAL_PACKET >= 0
+#define debugE(fmt, ...) Serial.printf("[E][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+#else
+#define debugE(fmt, ...)
+#endif
+#else
+#define debugA(fmt, ...)
+#define debugP(fmt, ...)
+#define debugV(fmt, ...)
+#define debugD(fmt, ...)
+#define debugI(fmt, ...)
+#define debugW(fmt, ...)
+#define debugE(fmt, ...)
+#endif
 #endif
 
 const size_t Packet::_headerSize = 5; /* the header size is const. Header is defined as shown below */
@@ -107,7 +107,7 @@ void Packet::setType(PACKET_TYPE type)
 void Packet::setSourceID(uint8_t id)
 {
     _header[2] &= 0x0F;
-    _header[2] |= (id & 0x0F)<<4;
+    _header[2] |= (id & 0x0F) << 4;
 }
 
 void Packet::setDestID(uint8_t id)
@@ -129,6 +129,7 @@ Packet &Packet::operator=(const Packet &pkt)
     _pkt = new uint8_t[_pktSize];
     _header = _pkt;
     _data = _header + _headerSize;
+    _priority = pkt._priority;
     memcpy(_pkt, pkt._pkt, _pktSize);
     return *this;
 }
@@ -250,4 +251,149 @@ bool Packet::checkIntegity()
     }
 
     return true;
+}
+
+bool PktQueueTx::addPacket(const Packet &pkt)
+{
+    xSemaphoreTake(_mutex, portMAX_DELAY);
+    std::vector<Packet>::iterator it;
+    for (it = _pktQueue.begin(); it != _pktQueue.end(); ++it)
+    {
+        if (it->getPriority() < pkt.getPriority())
+            break;
+    }
+    _pktQueue.insert(it, pkt);
+    xSemaphoreGive(_mutex);
+    return true;
+}
+
+bool PktQueueTx::addACK(const Packet &pkt2ack)
+{
+    Packet ack = Packet();
+    ack.setPktNumber(pkt2ack.getPktNumber());
+    ack.setDestID(pkt2ack.getSourceID());
+    ack.setSourceID(pkt2ack.getDestID());
+    ack.setQoS(Packet::ONE_PACKET_AT_MOST);
+    ack.setProtocolVersion(Packet::VERSION_1);
+    ack.setType(Packet::ACK);
+    ack.setSplit(false);
+    ack.setPiority(Packet::PRIORITY_HIGHEST);
+    /* ACK is prioritary over other type of packets, so we 
+    * must insert it just before the first packet to send that is not 
+    * of the type ACK */
+    return addPacket(ack);
+}
+
+bool PktQueueTx::getNextPacket(Packet *p)
+{
+    cleanUp();
+    xSemaphoreTake(_mutex, portMAX_DELAY);
+    std::vector<Packet>::iterator pkt;
+    for (pkt = _pktQueue.begin(); pkt != _pktQueue.end(); ++pkt)
+    {
+        if (pkt->getSent())
+        {
+            if (millis() - pkt->getSentTimestamp() >= pkt->getTimeout())
+            {
+                if (pkt->getSent() <= pkt->getMaxRetry())
+                {
+                    p = &(*pkt);
+                    xSemaphoreGive(_mutex);
+                    return true;
+                }
+            }
+        }
+        else
+        {
+            p = &(*pkt);
+            xSemaphoreGive(_mutex);
+            return true;
+        }
+    }
+    xSemaphoreGive(_mutex);
+    return false;
+}
+
+bool PktQueueTx::markPktAsSent(const Packet &pkt)
+{
+    _lastPktSentTime = millis();
+    switch (pkt.getQoS())
+    {
+    case Packet::ONE_PACKET_AT_MOST: /* if no QoS required, */
+        return removePkt(pkt);       /* just remove the packet */
+        break;
+
+    case Packet::AT_LEAST_ONE_PACKET: /* if QoS required */
+    {
+        xSemaphoreTake(_mutex, portMAX_DELAY);
+        std::vector<Packet>::iterator it;
+        for (it = _pktQueue.begin(); it != _pktQueue.end(); ++it)
+        {
+            if (*it == pkt)
+            {
+                it->hasJustBeenSent(); /* just mark the packet as sent */
+                xSemaphoreGive(_mutex);
+                return true;
+            }
+        }
+        xSemaphoreGive(_mutex);
+        break;
+    }
+
+    default:
+        break;
+    }
+    return false;
+}
+
+bool PktQueueTx::removePkt(const uint8_t &destID, const uint8_t &pktNumber)
+{
+    xSemaphoreTake(_mutex, portMAX_DELAY);
+    std::vector<Packet>::iterator it;
+    for (it = _pktQueue.begin(); it != _pktQueue.end(); ++it)
+    {
+        if ((it->getPktNumber() == pktNumber) &&
+            (it->getDestID() == destID))
+        {
+            _pktQueue.erase(it);
+            xSemaphoreGive(_mutex);
+            return true;
+        }
+    }
+    xSemaphoreGive(_mutex);
+    return false;
+}
+
+bool PktQueueTx::removePkt(const Packet &pkt)
+{
+    return removePkt(pkt.getDestID(), pkt.getPktNumber());
+}
+
+void PktQueueTx::clear()
+{
+    _pktQueue.clear();
+}
+
+bool PktQueueTx::cleanUp()
+{
+    bool ret = false;
+    xSemaphoreTake(_mutex, portMAX_DELAY);
+    std::vector<Packet>::iterator pkt;
+    for (pkt = _pktQueue.begin(); pkt != _pktQueue.end(); ++pkt)
+    {
+        if ((millis() - pkt->getSentTimestamp() >= pkt->getTimeout()) && (pkt->getSent() > pkt->getMaxRetry())) /* Too many retries, dropping packet */
+        {
+            debugW("Too many retries, dropping pkt %d", pkt->getPktNumber());
+            _pktQueue.erase(pkt--);
+            ret = true;
+            break;
+        }
+    }
+    xSemaphoreGive(_mutex);
+    return ret;
+}
+
+int PktQueueTx::size()
+{
+    return _pktQueue.size();
 }
