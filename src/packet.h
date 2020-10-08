@@ -78,6 +78,7 @@ public:
         _data = _header + _headerSize;
         _paddingCount = pkt._paddingCount;
         _priority = pkt._priority;
+        _pktNumberSet = pkt._pktNumberSet;
         memcpy(_pkt, pkt._pkt, _pktSize);
     }
 
@@ -116,6 +117,7 @@ public:
     uint32_t getSentTimestamp() const { return _sentTimestamp; }                                         /* get the timestamp of the time that the packet was sent */
     uint32_t getTimeout() const { return _timeout; }                                                     /* get the maximum time before considering a packet is lost */
     PRIORITY getPriority() const { return _priority; }                                                   /* get the priority of a packet */
+    bool pktNbSet() const { return _pktNumberSet; }                                                      /* returns true if pktnb has been set at least once */
 
     void setProtocolVersion(PROTOCOL_VERSION version);   /* setter for protocol version field */
     void setQoS(QoS qos);                                /* setter for QoS field */
@@ -123,7 +125,7 @@ public:
     void setSplit(bool split);                           /* setter for packet split flag */
     void setSourceID(uint8_t id);                        /* setter for SourceID */
     void setDestID(uint8_t id);                          /* setter for destID */
-    void setPktNumber(uint8_t nb) { _header[4] = nb; }   /* setter for pkt number */
+    void setPktNumber(uint8_t nb);                       /* setter for pkt number */
     void hasJustBeenSent();                              /* used to mark the packet as sent */
     void print();                                        /* print infos and content of a packet */
     void setPiority(PRIORITY prio) { _priority = prio; } /* setter for packet priority */
@@ -150,12 +152,13 @@ private:
     uint8_t _paddingCount = 0;         /* The number of padded bytes added at the end of the data */
     uint8_t _paddingModule = 16;       /* The packet length should be a multiple of this */
     PRIORITY _priority = PRIORITY_LOW; /* The priority of the packet */
+    bool _pktNumberSet = false;        /* true if packet number has been set at least once */
 };
 
 class PktQueueTx
 {
 public:
-    bool addPacket(const Packet &pkt);  /* Add a packet in the queue and automatically set the packet number. Returns true if operation was successful. */
+    bool addPacket(Packet pkt);         /* Add a packet in the queue and automatically set the packet number. Returns true if operation was successful. */
     bool addACK(const Packet &pkt2ack); /* Add in the TX queue a packet of type ACK corresponding to the packet passed in param */
 
     bool getNextPacket(Packet *pkt);       /* Returns the next packet to be send as param. Function returns true if a valid packet has been found.*/
@@ -166,13 +169,13 @@ public:
     void clear();   /* Erase all packets from queue */
     bool cleanUp(); /* Remove packets that have been sent too many times. Returns true if at least 1 packet was removed. */
 
-    int size(); /* Returns the number of packets in the queue */
+    int size() const; /* Returns the number of packets in the queue */
 
 private:
     std::vector<Packet> _pktQueue;                      /* pkt queue */
     uint32_t _lastPktSentTime = 0;                      /* timestamp of the moment the last packet was sent */
     SemaphoreHandle_t _mutex = xSemaphoreCreateMutex(); /* queue mutex */
-    uint8_t _nextPktNumber[16] = {1};                   /* stores the packet number depending on the destID */
+    uint8_t _nextPktNumber[16] = {0};                   /* stores the packet number depending on the destID */
 };
 
 class PktQueueRx

@@ -116,6 +116,12 @@ void Packet::setDestID(uint8_t id)
     _header[2] |= id & 0x0F;
 }
 
+void Packet::setPktNumber(uint8_t nb)
+{
+    _header[4] = nb;
+    _pktNumberSet = true;
+}
+
 Packet &Packet::operator=(const Packet &pkt)
 {
     _sent = pkt._sent;
@@ -130,6 +136,7 @@ Packet &Packet::operator=(const Packet &pkt)
     _header = _pkt;
     _data = _header + _headerSize;
     _priority = pkt._priority;
+    _pktNumberSet = pkt._pktNumberSet;
     memcpy(_pkt, pkt._pkt, _pktSize);
     return *this;
 }
@@ -253,7 +260,7 @@ bool Packet::checkIntegity()
     return true;
 }
 
-bool PktQueueTx::addPacket(const Packet &pkt)
+bool PktQueueTx::addPacket(Packet pkt)
 {
     xSemaphoreTake(_mutex, portMAX_DELAY);
     std::vector<Packet>::iterator it;
@@ -269,8 +276,8 @@ bool PktQueueTx::addPacket(const Packet &pkt)
 
 bool PktQueueTx::addACK(const Packet &pkt2ack)
 {
-    Packet ack = Packet();
-    ack.setPktNumber(pkt2ack.getPktNumber());
+    uint8_t nb = pkt2ack.getPktNumber();
+    Packet ack = Packet(sizeof(nb), &nb, false);
     ack.setDestID(pkt2ack.getSourceID());
     ack.setSourceID(pkt2ack.getDestID());
     ack.setQoS(Packet::ONE_PACKET_AT_MOST);
@@ -298,7 +305,8 @@ bool PktQueueTx::getNextPacket(Packet *p)
                 if (pkt->getSent() <= pkt->getMaxRetry())
                 {
                     if (p != nullptr)
-                        *p = *pkt;
+                        *p = *pkt; /* pktnb has already been set */
+
                     xSemaphoreGive(_mutex);
                     return true;
                 }
@@ -307,7 +315,11 @@ bool PktQueueTx::getNextPacket(Packet *p)
         else
         {
             if (p != nullptr)
+            {
+                if (!pkt->pktNbSet())
+                    pkt->setPktNumber(_nextPktNumber[pkt->getDestID()]++); /* set packet number */
                 *p = *pkt;
+            }
             xSemaphoreGive(_mutex);
             return true;
         }
@@ -354,7 +366,8 @@ bool PktQueueTx::removePkt(const uint8_t &destID, const uint8_t &pktNumber)
     std::vector<Packet>::iterator it;
     for (it = _pktQueue.begin(); it != _pktQueue.end(); ++it)
     {
-        if ((it->getPktNumber() == pktNumber) &&
+        if ((it->pktNbSet() == true) &&
+            (it->getPktNumber() == pktNumber) &&
             (it->getDestID() == destID))
         {
             _pktQueue.erase(it);
@@ -395,7 +408,7 @@ bool PktQueueTx::cleanUp()
     return ret;
 }
 
-int PktQueueTx::size()
+int PktQueueTx::size() const
 {
     return _pktQueue.size();
 }
