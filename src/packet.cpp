@@ -412,3 +412,84 @@ int PktQueueTx::size() const
 {
     return _pktQueue.size();
 }
+
+bool PktQueueRx::addPacket(Packet pkt)
+{
+    bool ret = false;
+    
+    if (_lastPktReceived != pkt)
+    {
+        ret = true;
+        if (pkt.isSplit())
+        {
+            debugI("received split packet!");
+            xSemaphoreTake(_mutex, portMAX_DELAY);
+            _pktQueue.push_back(pkt);
+            xSemaphoreGive(_mutex);
+        }
+        else
+        {
+            if (this->size() == 0)
+            {
+                if (_lastPktReceived.getPktNumber() != (pkt.getPktNumber() - 1))
+                    debugW("Missing packet !!!");
+                if (_rcvCallback != nullptr)
+                    _rcvCallback(pkt.getData(), pkt.getDataSize(), pkt.getType());
+            }
+            else
+            {
+                debugI("received last split packet!");
+                xSemaphoreTake(_mutex, portMAX_DELAY);
+                _pktQueue.push_back(pkt);
+                std::vector<Packet>::iterator it = _pktQueue.begin();
+                size_t dataSize = 0;
+                Packet::PACKET_TYPE pktType = it->getType();
+                uint8_t pktNb = it->getPktNumber() - 1;
+                for (it = _pktQueue.begin(); it != _pktQueue.end(); ++it)
+                {
+                    dataSize += it->getDataSize();
+                    if (it->getType() != pktType)
+                    {
+                        debugW("met packet type inconsistency when rebuilding split packet...");
+                    }
+                    if (it->getPktNumber() != (pktNb + 1))
+                    {
+                        debugW("pkt number inconsistency : current nb is %d while last nb is %d", it->getPktNumber(), pktNb);
+                    }
+
+                    pktType = it->getType();
+                    pktNb = it->getPktNumber();
+                }
+                debugD("total datasize for split packet is %d", dataSize);
+                uint8_t data[dataSize];
+                size_t dataIndex = 0;
+                for (it = _pktQueue.begin(); it != _pktQueue.end(); ++it)
+                {
+                    memcpy(data + dataIndex, it->getData(), it->getDataSize());
+                    dataIndex += it->getDataSize();
+                }
+                _pktQueue.clear();
+                xSemaphoreGive(_mutex);
+                if (_rcvCallback != nullptr)
+                {
+                    debugD("Total retrieved payload : %d bytes", dataIndex);
+                    _rcvCallback(data, dataIndex, pktType);
+                }
+            }
+        }
+        _lastPktReceived = pkt;
+    }
+    
+    return ret;
+}
+
+
+void PktQueueRx::clear()
+{
+    _pktQueue.clear();
+}
+
+int PktQueueRx::size() const
+{
+    return _pktQueue.size();
+}

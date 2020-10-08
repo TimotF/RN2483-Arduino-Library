@@ -96,6 +96,7 @@ public:
             return false;                               /* comparison is false */
         return !memcmp(this->_pkt, pkt._pkt, _pktSize); /* else, return the comparison of the memory allocated to the packet */
     }
+    bool operator!=(const Packet &pkt) { return !(*this==pkt); } /* Overload of operator!= */
 
     uint8_t *get() { return _pkt; }                               /* getter for the packet array */
     uint8_t *getData() { return _data; }                          /* getter for the data array */
@@ -183,17 +184,18 @@ class PktQueueRx
 public:
     bool addPacket(Packet pkt); /* Add a packet in the queue. Returns true if operation was successful. */
 
-    bool receivedCompletePkt(Packet *pkt); /* Returns the next packet to be send as param. Function returns true if a valid packet has been found.*/
+    void setRcvCallback(void (*reicvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType)) { _reicvCallback = reicvCallback; } /* set receive callback to call when a packet was just received */
 
-    bool removePkt(); /* Remove a pkt from the queue. Returns true if the pkt was successfully removed, false otherwise. */
-    void cleanUp();   /* Erase all packets from queue */
+    void clear();                      /* Erase all packets from queue */
 
-    int card(); /* Returns the number of packets in the queue */
+    int size() const; /* Returns the number of packets in the queue */
 
 private:
-    std::vector<Packet> _pktQueue;                      /* Packet queue, in the order of arrival. */
-    uint32_t _lastPktRecvTime = 0;                      /* Timestamp of the last received packet. */
-    SemaphoreHandle_t _mutex = xSemaphoreCreateMutex(); /* Mutex to protect queue access */
+    std::vector<Packet> _pktQueue;                                                      /* Packet queue, in the order of arrival. */
+    uint32_t _lastPktRecvTime = 0;                                                      /* Timestamp of the last received packet. */
+    SemaphoreHandle_t _mutex = xSemaphoreCreateMutex();                                 /* Mutex to protect queue access */
+    Packet _lastPktReceived;                                                            /* A copy of the last received packet */
+    void (*_rcvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType); /* callback function to call when a new packet was received */
 };
 
 #endif
