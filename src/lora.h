@@ -69,7 +69,7 @@ private:
     std::vector<Packet> _packetsQueue;                          /* packets queue to store packets that need to be transmitted */
     uint32_t _lastPktSentTime = 0;                              /* timestamp of the moment the last packet was sent */
 
-    std::vector<Packet> _splitPktQueue;    /* Buffer for receiving split paclets */
+    std::vector<Packet> _splitPktQueue;    /* Buffer for receiving split packets */
     bool _hasSplitPacketsInBuffer = false; /* tells if there is split type packets in the buffer */
 
     bool _useCyphering = false; /* tells if we are cyphering the packets we send through lora*/

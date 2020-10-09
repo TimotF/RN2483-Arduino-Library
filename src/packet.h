@@ -9,7 +9,9 @@ class Packet
 public:
     enum PROTOCOL_VERSION /* protocol version definition */
     {
-        VERSION_1 = 0 /* protocol version 1, developped in April 2020 */
+        VERSION_1 = 0,  /* protocol version 1, developped in April 2020 */
+        VERSION_2 = 1,  /* protocol version 2, developped in October 2020 - Added multi device support */
+        VERSION_UNK = 7 /* Unknow protocol */
     };
 
     enum QoS /* SoS definition */
@@ -23,7 +25,8 @@ public:
         PING = 0, /* Discover packet type*/
         OTA = 1,  /* OTA packet type */
         DATA = 2, /* DATA packet type */
-        ACK = 3   /* ACK packet type */
+        ACK = 3,  /* ACK packet type */
+        ID = 4    /* ID packet type */
     };
 
     enum PRIORITY /* packet priority */
@@ -191,7 +194,7 @@ public:
     int size() const; /* Returns the number of packets in the queue */
 
 private:
-    std::vector<Packet> _pktQueue;                                                              /* Packet queue, in the order of arrival. */                                             
+    std::vector<Packet> _pktQueue;                                                              /* Packet queue, in the order of arrival. */
     SemaphoreHandle_t _mutex = xSemaphoreCreateMutex();                                         /* Mutex to protect queue access */
     Packet _lastPktReceived;                                                                    /* A copy of the last received packet */
     void (*_rcvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType) = nullptr; /* callback function to call when a new packet was received */
