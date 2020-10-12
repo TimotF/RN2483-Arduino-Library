@@ -506,3 +506,26 @@ bool LoRaClients::addClient(LoRaClient client)
     _clients.push_back(client);
     return true;
 }
+
+bool LoRaClients::addTXPacket(Packet pkt, const uint8_t &destID)
+{
+    pkt.setSourceID(_host._clientID);
+    pkt.setDestID(destID);
+    pkt.setProtocolVersion(Packet::VERSION_2);
+    return _txQueue.addPacket(pkt);
+}
+
+bool LoRaClients::getNextTXPacket(Packet *pkt)
+{
+    return _txQueue.getNextPacket(pkt);
+}
+
+bool LoRaClients::markPktAsSent(const Packet &pkt)
+{
+    return _txQueue.markPktAsSent(pkt);
+}
+
+int LoRaClients::TXsize() const
+{
+    return _txQueue.size();
+}

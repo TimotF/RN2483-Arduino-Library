@@ -5,9 +5,9 @@
 #include "packet.h"
 
 #define GATEWAY_ID 0x00
-#define MAX_CLIENT_ID 0x0E
-#define BROADCAST_ID 0x0F
-#define DEFAULT_ID 0xFF
+#define MAX_CLIENT_ID 0x0D
+#define BROADCAST_ID 0x0E
+#define DEFAULT_ID 0x0F
 
 struct LoRaClient
 {
@@ -63,7 +63,12 @@ public:
 
     void setRcvCallback(void (*rcvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType)); /* set receive callback to call when a packet was just received */
 
-    bool addClient(LoRaClient client);
+    bool addClient(LoRaClient client); /* Add a client in the list */
+
+    bool addTXPacket(Packet pkt, const uint8_t &destID); /* Add a packet in the TX queue and automatically set the packet number. Returns true if operation was successful. */
+    bool getNextTXPacket(Packet *pkt);                          /* Returns the next packet to be send as param. Function returns true if a valid packet has been found.*/
+    bool markPktAsSent(const Packet &pkt);                      /* Mark a packet as sent. Returns true if successful. */
+    int TXsize() const;                                         /* Returns the number of packets in the queue */
 
 private:
     std::vector<LoRaClient> _clients; /* list of known clients */
