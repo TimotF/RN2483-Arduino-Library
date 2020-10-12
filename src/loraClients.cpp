@@ -12,8 +12,10 @@ extern RemoteDebug Debug;
 #undef debugI
 #undef debugW
 #undef debugE
-#ifdef DEBUG_SERIAL_PACKET
-#if DEBUG_SERIAL_PACKET >= 4
+// #ifdef DEBUG_SERIAL_PACKET
+#if 1
+// #if DEBUG_SERIAL_PACKET >= 4
+#if 1
 #define debugA(fmt, ...) Serial.printf("[A][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #define debugP(fmt, ...) Serial.printf("[P][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #define debugV(fmt, ...) Serial.printf("[V][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
@@ -22,22 +24,26 @@ extern RemoteDebug Debug;
 #define debugP(fmt, ...)
 #define debugV(fmt, ...)
 #endif
-#if DEBUG_SERIAL_PACKET >= 3
+// #if DEBUG_SERIAL_PACKET >= 3
+#if 1
 #define debugD(fmt, ...) Serial.printf("[D][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #else
 #define debugD(fmt, ...)
 #endif
-#if DEBUG_SERIAL_PACKET >= 2
+// #if DEBUG_SERIAL_PACKET >= 2
+#if 1
 #define debugI(fmt, ...) Serial.printf("[I][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #else
 #define debugI(fmt, ...)
 #endif
-#if DEBUG_SERIAL_PACKET >= 1
+// #if DEBUG_SERIAL_PACKET >= 1
+#if 1
 #define debugW(fmt, ...) Serial.printf("[W][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #else
 #define debugW(fmt, ...)
 #endif
-#if DEBUG_SERIAL_PACKET >= 0
+// #if DEBUG_SERIAL_PACKET >= 0
+#if 1
 #define debugE(fmt, ...) Serial.printf("[E][C%d][%ld][%s:%d] %s: \t" fmt "\n", xPortGetCoreID(), millis(), __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #else
 #define debugE(fmt, ...)
@@ -55,8 +61,10 @@ extern RemoteDebug Debug;
 
 void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
 {
-    if (!isClientKnown(pkt.getSourceID())) /* if the client is not known */
+    debugV("Received new pkt with snr %d", snr);
+    if (!isClientIDKnown(pkt.getSourceID()) && (pkt.getSourceID() != GATEWAY_ID)) /* if the client is not known */
     {
+        debugD("Unknown client ID");
         if (pkt.getDestID() == _host._clientID)
         {
             /* we ask for its identification */
@@ -65,7 +73,7 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
             idPkt.setPiority(Packet::PRIORITY_HIGH);
             idPkt.setType(Packet::ID);
             idPkt.setQoS(Packet::ONE_PACKET_AT_MOST);
-            idPkt.setProtocolVersion(Packet::VERSION_2);
+            idPkt.setProtocolVersion(_host._protocolVersion);
             idPkt.setSourceID(_host._clientID);
             idPkt.setDestID(pkt.getSourceID());
             _txQueue.addPacket(idPkt);
@@ -82,6 +90,7 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
         case Packet::OTA:
         case Packet::DATA:
         {
+            debugD("Received DATA pkt");
             if (pkt.getDestID() == _host._clientID ||
                 pkt.getDestID() == BROADCAST_ID)
             {
@@ -98,6 +107,7 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
             break;
         }
         case Packet::ACK:
+            debugD("received ACK pkt");
             if (pkt.getDestID() == _host._clientID ||
                 pkt.getDestID() == BROADCAST_ID)
             {
@@ -114,11 +124,13 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
             }
             break;
         case Packet::ID:
+            debugD("received ID pkt");
             if (pkt.getDataSize() > 0)
             {
                 switch (pkt.getData()[0])
                 {
                 case DISCOVER:
+                    debugD("ID pkt -> DISCOVER");
                     if (pkt.getDestID() == _host._clientID)
                     {
                         if (pkt.getDataSize() <= 6)
@@ -142,7 +154,7 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
                                 newClient._snr = snr;
                                 newClient._protocolVersion = pkt.getProtocolVersion();
                                 newClient._rxQueue.setRcvCallback(_rcvCallback);
-                                _clients.push_back(newClient);
+                                addClient(newClient);
 
                                 uint8_t attribPayload[14] = {ATTRIBUTION};
                                 memcpy(attribPayload + 1, newClient._macAddress, 6);
@@ -152,7 +164,7 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
                                 attrib.setPiority(Packet::PRIORITY_HIGH);
                                 attrib.setType(Packet::ID);
                                 attrib.setQoS(Packet::ONE_PACKET_AT_MOST);
-                                attrib.setProtocolVersion(Packet::VERSION_2);
+                                attrib.setProtocolVersion(_host._protocolVersion);
                                 attrib.setSourceID(GATEWAY_ID);
                                 attrib.setDestID(BROADCAST_ID);
                                 _txQueue.addPacket(attrib);
@@ -161,7 +173,8 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
                     }
                     break;
                 case ATTRIBUTION:
-                    if (pkt.getDataSize() <= 14)
+                    debugD("ID pkt -> ATTRIBUTION");
+                    if (pkt.getDataSize() <= 13)
                     {
                         debugE("wrong payload for pkt ID ATTRIBUTION");
                         break;
@@ -171,22 +184,21 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
                         if (memcmp(_host._macAddress, &(pkt.getData()[1]), 6) == 0) /* if macAddress is ours */
                         {
                             _host._clientID = pkt.getData()[7]; /* save the attributed id */
-                            if (!isClientKnown(pkt.getSourceID()))
-                            {
-                                LoRaClient newClient;
-                                memcpy(newClient._macAddress, &(pkt.getData()[8]), 6);
-                                newClient._lastSeenTimestamp = millis();
-                                newClient._clientID = pkt.getSourceID();
-                                newClient._snr = snr;
-                                newClient._protocolVersion = pkt.getProtocolVersion();
-                                newClient._rxQueue.setRcvCallback(_rcvCallback);
-                                _clients.push_back(newClient);
-                            }
+
+                            LoRaClient newClient;
+                            memcpy(newClient._macAddress, &(pkt.getData()[8]), 6);
+                            newClient._lastSeenTimestamp = millis();
+                            newClient._clientID = pkt.getSourceID();
+                            newClient._snr = snr;
+                            newClient._protocolVersion = pkt.getProtocolVersion();
+                            newClient._rxQueue.setRcvCallback(_rcvCallback);
+                            addClient(newClient);
                         }
                     }
                     break;
                 case ID_REQUIRED:
                 {
+                    debugD("ID pkt -> ID_REQUIRED");
                     if (pkt.getDestID() == _host._clientID)
                     {
                         _host._clientID = DEFAULT_ID;
@@ -196,7 +208,7 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
                         idPkt.setPiority(Packet::PRIORITY_HIGH);
                         idPkt.setType(Packet::ID);
                         idPkt.setQoS(Packet::ONE_PACKET_AT_MOST);
-                        idPkt.setProtocolVersion(Packet::VERSION_2);
+                        idPkt.setProtocolVersion(_host._protocolVersion);
                         idPkt.setSourceID(BROADCAST_ID);
                         idPkt.setDestID(pkt.getSourceID());
                         _txQueue.addPacket(idPkt);
@@ -221,6 +233,9 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
 
 int LoRaClients::getID(uint8_t macAddress[6])
 {
+    if (macAddress == nullptr)
+        return -1;
+
     // Check if macAddress matches the _host
     if (memcmp(macAddress, _host._macAddress, 6) == 0)
     {
@@ -308,7 +323,7 @@ uint32_t LoRaClients::lastSeenTimestamp(uint8_t clientID)
     // Check if clientID matches the _host
     if (clientID == _host._clientID)
     {
-        return _host._protocolVersion;
+        return _host._lastSeenTimestamp;
     }
 
     // Check if the clientID matches the one of our known clients
@@ -317,16 +332,16 @@ uint32_t LoRaClients::lastSeenTimestamp(uint8_t clientID)
     {
         if (clientID == it->_clientID)
         {
-            return it->_protocolVersion;
+            return it->_lastSeenTimestamp;
         }
     }
     // No match, return min value
-    return Packet::VERSION_UNK;
+    return 0;
 }
 
 String LoRaClients::getClientListAsJSON()
 {
-    String json = "{";
+    String json = "[";
     bool atLeastOneClient = false;
 
     std::vector<LoRaClient>::iterator it;
@@ -357,11 +372,11 @@ String LoRaClients::getClientListAsJSON()
         atLeastOneClient = true;
     }
 
-    json += "}";
+    json += "]";
     return json;
 }
 
-bool LoRaClients::isClientKnown(uint8_t clientID)
+bool LoRaClients::isClientIDKnown(uint8_t clientID)
 {
     if (clientID == BROADCAST_ID)
         return true;
@@ -377,7 +392,7 @@ bool LoRaClients::isClientKnown(uint8_t clientID)
     return false;
 }
 
-bool LoRaClients::isClientKnown(uint8_t *macAddress)
+bool LoRaClients::isClientMacKnown(uint8_t *macAddress)
 {
     std::vector<LoRaClient>::iterator it;
     for (it = _clients.begin(); it != _clients.end(); ++it)
@@ -398,7 +413,7 @@ int LoRaClients::attribID(uint8_t *macAddress)
     id = 1;
     for (id = 1; id <= MAX_CLIENT_ID; ++id)
     {
-        if (!isClientKnown(id))
+        if (!isClientIDKnown(id) && (id != _host._clientID))
             break;
     }
     if (id > MAX_CLIENT_ID)
@@ -469,4 +484,25 @@ bool LoRaClients::setHostID(uint8_t id)
         return true;
     }
     return false;
+}
+
+bool LoRaClients::addClient(LoRaClient client)
+{
+    // check if client already exists and update it if it does
+    std::vector<LoRaClient>::iterator it;
+    for (it = _clients.begin(); it != _clients.end(); ++it)
+    {
+        if (memcmp(client._macAddress, it->_macAddress, 6) == 0)
+        {
+            it->_snr = client._snr;
+            it->_clientID = client._clientID;
+            it->_lastSeenTimestamp = client._lastSeenTimestamp;
+            it->_protocolVersion = client._protocolVersion;
+            it->_rxQueue = client._rxQueue;
+            return true;
+        }
+    }
+    // if client didn't already exist, create it
+    _clients.push_back(client);
+    return true;
 }

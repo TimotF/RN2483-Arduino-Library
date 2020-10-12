@@ -29,10 +29,19 @@ public:
         ID_REQUIRED  /* Send when a packet was received from an unknown client to ask for identification */
     };
 
-    LoRaClients(uint8_t *macAddress = nullptr)
+    LoRaClients(uint8_t *macAddress, uint8_t id = DEFAULT_ID)
     {
-        _host._clientID = DEFAULT_ID;
+        if (id == DEFAULT_ID)
+            _host._clientID = id;
+        else
+        {
+            if (!setHostID(id))
+                _host._clientID = DEFAULT_ID;
+        }
         setHostMac(macAddress);
+        _host._lastSeenTimestamp = 0;
+        _host._snr = -128;
+        _host._protocolVersion = Packet::VERSION_2;
     }
 
     void newPktFromClient(Packet pkt, int8_t snr);          /* Extract infos from received pkt and update the corresponding client infos */
@@ -42,8 +51,8 @@ public:
     Packet::PROTOCOL_VERSION getProtocol(uint8_t clientID); /* return the available protocol of a client */
     uint32_t lastSeenTimestamp(uint8_t clientID);           /* return the timestamp of the moment the client was last seen */
     String getClientListAsJSON();                           /* return the client list as JSON */
-    bool isClientKnown(uint8_t clientID);                   /* return true if clientID matches a known client */
-    bool isClientKnown(uint8_t *macAddress);                /* return true if macAddress matches a known client */
+    bool isClientIDKnown(uint8_t clientID);                 /* return true if clientID matches a known client */
+    bool isClientMacKnown(uint8_t *macAddress);             /* return true if macAddress matches a known client */
     int attribID(uint8_t *macAddress);                      /* Attribution of an ID to a client */
     bool isHostIDset();                                     /* return true if host id has been set */
 
@@ -53,6 +62,8 @@ public:
     bool setClientSNR(uint8_t clientID, int8_t snr);       /* set snr of a client */
 
     void setRcvCallback(void (*rcvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType)); /* set receive callback to call when a packet was just received */
+
+    bool addClient(LoRaClient client);
 
 private:
     std::vector<LoRaClient> _clients; /* list of known clients */
