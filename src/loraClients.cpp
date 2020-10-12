@@ -458,10 +458,15 @@ void LoRaClients::setRcvCallback(void (*rcvCallback)(uint8_t *payload, size_t si
 
 bool LoRaClients::isHostIDset()
 {
-TODO
+    return _host._clientID != DEFAULT_ID;
 }
 
 bool LoRaClients::setHostID(uint8_t id)
 {
-TODO
+    if (id <= MAX_CLIENT_ID)
+    {
+        _host._clientID = id;
+        return true;
+    }
+    return false;
 }
