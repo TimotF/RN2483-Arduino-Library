@@ -349,19 +349,19 @@ String LoRaClients::getClientListAsJSON()
     {
         if (atLeastOneClient)
             json += ",";
-        json += "{clientID:\"";
+        json += "{\"clientID\":\"";
         json += it->_clientID;
         json += "\",";
-        json += "lastSeenTs:\"";
+        json += "\"lastSeenTs\":\"";
         json += it->_lastSeenTimestamp;
         json += "\",";
-        json += "snr:\"";
+        json += "\"snr\":\"";
         json += it->_snr;
         json += "\",";
-        json += "protocol:\"";
+        json += "\"protocol\":\"";
         json += it->_protocolVersion;
         json += "\",";
-        json += "mac:\"";
+        json += "\"mac\":\"";
         char mac[18];
         sprintf(mac, "%02x:%02x:%02x:%02x:%02x:%02x",
                 it->_macAddress[0], it->_macAddress[1],
