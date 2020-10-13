@@ -91,8 +91,7 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
         case Packet::DATA:
         {
             debugD("Received DATA pkt");
-            if (pkt.getDestID() == _host._clientID ||
-                pkt.getDestID() == BROADCAST_ID)
+            if (pkt.getDestID() == _host._clientID)
             {
                 std::vector<LoRaClient>::iterator it;
                 for (it = _clients.begin(); it != _clients.end(); ++it)
@@ -103,6 +102,10 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
                         break;
                     }
                 }
+            }
+            else if (pkt.getDestID() == BROADCAST_ID)
+            {
+                _host._rxQueue.addPacket(pkt);
             }
             break;
         }
@@ -435,6 +438,12 @@ bool LoRaClients::setHostMac(uint8_t *macAddress)
 
 bool LoRaClients::setClientLastSeen(uint8_t clientID, uint32_t ts)
 {
+    if (clientID == BROADCAST_ID)
+    {
+        _host._lastSeenTimestamp = ts;
+        return true;
+    }
+
     std::vector<LoRaClient>::iterator it;
     for (it = _clients.begin(); it != _clients.end(); ++it)
     {
@@ -449,6 +458,12 @@ bool LoRaClients::setClientLastSeen(uint8_t clientID, uint32_t ts)
 
 bool LoRaClients::setClientSNR(uint8_t clientID, int8_t snr)
 {
+    if (clientID == BROADCAST_ID)
+    {
+        _host._snr = snr;
+        return true;
+    }
+
     std::vector<LoRaClient>::iterator it;
     for (it = _clients.begin(); it != _clients.end(); ++it)
     {
@@ -469,6 +484,8 @@ void LoRaClients::setRcvCallback(void (*rcvCallback)(uint8_t *payload, size_t si
     {
         it->_rxQueue.setRcvCallback(rcvCallback);
     }
+    // The host rx queue will handle broadcasted packets
+    _host._rxQueue.setRcvCallback(rcvCallback);
 }
 
 bool LoRaClients::isHostIDset()

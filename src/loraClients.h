@@ -72,7 +72,7 @@ public:
 
 private:
     std::vector<LoRaClient> _clients; /* list of known clients */
-    LoRaClient _host;                 /* infos of the host */
+    LoRaClient _host;                 /* infos of the host, its rxQueue stores the broadcast packets */
     uint32_t _clientTimeoutDelay;
     PktQueueTx _txQueue;                                                                        /* Delay beyond which we forget a client if nothing was received */
     void (*_rcvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType) = nullptr; /* callback function to call when a new packet was received */
