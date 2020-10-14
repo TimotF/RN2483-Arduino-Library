@@ -175,6 +175,8 @@ public:
 
     int size() const; /* Returns the number of packets in the queue */
 
+    uint32_t getLastPktSentTime() { return _lastPktSentTime; } /* Return the ts of the moment the last packet was sent */
+
 private:
     std::vector<Packet> _pktQueue;                      /* pkt queue */
     uint32_t _lastPktSentTime = 0;                      /* timestamp of the moment the last packet was sent */

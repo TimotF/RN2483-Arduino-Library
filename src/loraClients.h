@@ -29,7 +29,7 @@ public:
         ID_REQUIRED  /* Send when a packet was received from an unknown client to ask for identification */
     };
 
-    LoRaClients(uint8_t *macAddress, uint8_t id = DEFAULT_ID)
+    LoRaClients(uint8_t *macAddress = nullptr, uint8_t id = DEFAULT_ID)
     {
         if (id == DEFAULT_ID)
             _host._clientID = id;
@@ -66,9 +66,11 @@ public:
     bool addClient(LoRaClient client); /* Add a client in the list */
 
     bool addTXPacket(Packet pkt, const uint8_t &destID); /* Add a packet in the TX queue and automatically set the packet number. Returns true if operation was successful. */
-    bool getNextTXPacket(Packet *pkt);                          /* Returns the next packet to be send as param. Function returns true if a valid packet has been found.*/
-    bool markPktAsSent(const Packet &pkt);                      /* Mark a packet as sent. Returns true if successful. */
-    int TXsize() const;                                         /* Returns the number of packets in the queue */
+    bool getNextTXPacket(Packet *pkt);                   /* Returns the next packet to be send as param. Function returns true if a valid packet has been found.*/
+    bool markPktAsSent(const Packet &pkt);               /* Mark a packet as sent. Returns true if successful. */
+    int TXsize() const;                                  /* Returns the number of packets in the queue */
+    bool needToSendACK();                                /* returns true if an ACK is waiting for to be sent */
+    uint32_t getLastSentPktTs();                         /* get the timestamp of the last sent packet */
 
 private:
     std::vector<LoRaClient> _clients; /* list of known clients */

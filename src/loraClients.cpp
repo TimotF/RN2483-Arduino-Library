@@ -546,3 +546,21 @@ int LoRaClients::TXsize() const
 {
     return _txQueue.size();
 }
+
+bool LoRaClients::needToSendACK()
+{
+    Packet p;
+    if (_txQueue.getNextPacket(&p))
+    {
+        if (p.getPriority() == Packet::PRIORITY_HIGHEST)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+uint32_t LoRaClients::getLastSentPktTs()
+{
+    return _txQueue.getLastPktSentTime();
+}
