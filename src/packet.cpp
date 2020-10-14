@@ -200,10 +200,14 @@ void Packet::print()
     uint8_t size = this->getPktSize();
     uint8_t *data = this->get();
     debugD("Pkt of length %d, protocol %d, Qos %d, Type %d, split %d, sourceID %d, destID %d, nb %d\n", this->getPktSize(), this->getProtocolVersion(), this->getQoS(), this->getType(), this->isSplit(), this->getSourceID(), this->getDestID(), this->getPktNumber());
+    String pktData = "";
     for (int i = 0; i < size; ++i)
     {
-        debugD(" %02X", data[i]);
+        char nextByte[6];
+        sprintf(nextByte, " %02x", data[i]);
+        pktData += String(nextByte);
     }
+    debugD("%s", pktData.c_str());
     String asciiData = String((char *)(data + _headerSize));
     debugD("data = %s\n", asciiData.c_str());
 }
@@ -245,13 +249,18 @@ bool Packet::checkIntegity()
         return false;
     }
     // packet type should be known
-    if (!(getType() == Packet::DATA || getType() == Packet::PING || getType() == Packet::OTA || getType() == Packet::ACK))
+    if (!(getType() == Packet::DATA ||
+          getType() == Packet::PING ||
+          getType() == Packet::OTA ||
+          getType() == Packet::ACK ||
+          getType() == Packet::ID))
     {
         debugE("Unknown packet type!");
         return false;
     }
     // packet version should be known
-    if (!(getProtocolVersion() == Packet::VERSION_1))
+    if (!(getProtocolVersion() == Packet::VERSION_1 ||
+          getProtocolVersion() == Packet::VERSION_2))
     {
         debugE("Unknown protocol version!");
         return false;
@@ -416,7 +425,7 @@ int PktQueueTx::size() const
 bool PktQueueRx::addPacket(Packet pkt)
 {
     bool ret = false;
-    
+
     if (_lastPktReceived != pkt)
     {
         ret = true;
@@ -479,10 +488,9 @@ bool PktQueueRx::addPacket(Packet pkt)
         }
         _lastPktReceived = pkt;
     }
-    
+
     return ret;
 }
-
 
 void PktQueueRx::clear()
 {
