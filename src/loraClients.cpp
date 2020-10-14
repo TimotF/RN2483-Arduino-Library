@@ -360,8 +360,8 @@ String LoRaClients::getClientListAsJSON()
         json += "{\"clientID\":\"";
         json += it->_clientID;
         json += "\",";
-        json += "\"lastSeenTs\":\"";
-        json += it->_lastSeenTimestamp;
+        json += "\"lastSeen\":\"";
+        json += int((millis() - it->_lastSeenTimestamp)/1000);
         json += "\",";
         json += "\"snr\":\"";
         json += it->_snr;
