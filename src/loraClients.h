@@ -61,7 +61,7 @@ public:
     bool setClientLastSeen(uint8_t clientID, uint32_t ts); /* set last seen ts of a client */
     bool setClientSNR(uint8_t clientID, int8_t snr);       /* set snr of a client */
 
-    void setRcvCallback(void (*rcvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType)); /* set receive callback to call when a packet was just received */
+    void setRcvCallback(void (*rcvCallback)(Packet pkt)); /* set receive callback to call when a packet was just received */
 
     bool addClient(LoRaClient client); /* Add a client in the list */
 
@@ -77,7 +77,7 @@ private:
     LoRaClient _host;                 /* infos of the host, its rxQueue stores the broadcast packets */
     uint32_t _clientTimeoutDelay;
     PktQueueTx _txQueue;                                                                        /* Delay beyond which we forget a client if nothing was received */
-    void (*_rcvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType) = nullptr; /* callback function to call when a new packet was received */
+    void (*_rcvCallback)(Packet pkt) = nullptr; /* callback function to call when a new packet was received */
 };
 
 #endif

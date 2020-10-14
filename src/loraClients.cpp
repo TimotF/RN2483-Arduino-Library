@@ -481,7 +481,7 @@ bool LoRaClients::setClientSNR(uint8_t clientID, int8_t snr)
     return false;
 }
 
-void LoRaClients::setRcvCallback(void (*rcvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType))
+void LoRaClients::setRcvCallback(void (*rcvCallback)(Packet pkt))
 {
     _rcvCallback = rcvCallback;
     std::vector<LoRaClient>::iterator it;

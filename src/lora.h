@@ -41,7 +41,7 @@ public:
     bool send(const uint8_t *data, uint16_t dataSize, Packet::PACKET_TYPE pktType,
               uint8_t destID = BROADCAST_ID, bool ack = false, bool canBeDropped = false); /* method to send data via LoRa */
 
-    void setRcvCallback(void (*rcvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType)); /* set receive callback to call when a packet was just received */
+    void setRcvCallback(void (*rcvCallback)(Packet pkt)); /* set receive callback to call when a packet was just received */
 
     bool useCyphering(String key);
 
@@ -57,6 +57,7 @@ public:
     String ledOff();
 
     String getClientsList() { return _loraClients.getClientListAsJSON(); }
+    uint8_t *getMac(uint8_t clientID) { return _loraClients.getMac(clientID); }
 
 private:
     rn2xx3 _lora;              /* lora object to handle communication with lora module */
@@ -70,7 +71,7 @@ private:
 
     LoRaClients _loraClients; /* TX / RX packets handler */
 
-    void (*_rcvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType); /* callback function to call when a new packet was received */
+    void (*_rcvCallback)(Packet pkt); /* callback function to call when a new packet was received */
 
     static const uint8_t _maxPktSize = 230; /* maximum size of a packet */
 

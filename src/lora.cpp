@@ -352,7 +352,7 @@ String LoRa::ledOff()
     return "FAIL";
 }
 
-void LoRa::setRcvCallback(void (*rcvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType))
+void LoRa::setRcvCallback(void (*rcvCallback)(Packet pkt))
 {
     _rcvCallback = rcvCallback;
     _loraClients.setRcvCallback(rcvCallback);

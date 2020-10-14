@@ -191,7 +191,7 @@ class PktQueueRx
 public:
     bool addPacket(Packet pkt); /* Add a packet in the queue. Returns true if operation was successful. */
 
-    void setRcvCallback(void (*rcvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType)) { _rcvCallback = rcvCallback; } /* set receive callback to call when a packet was just received */
+    void setRcvCallback(void (*rcvCallback)(Packet pkt)) { _rcvCallback = rcvCallback; } /* set receive callback to call when a packet was just received */
 
     void clear(); /* Erase all packets from queue */
 
@@ -201,7 +201,7 @@ private:
     std::vector<Packet> _pktQueue;                                                              /* Packet queue, in the order of arrival. */
     SemaphoreHandle_t _mutex = xSemaphoreCreateMutex();                                         /* Mutex to protect queue access */
     Packet _lastPktReceived;                                                                    /* A copy of the last received packet */
-    void (*_rcvCallback)(uint8_t *payload, size_t size, Packet::PACKET_TYPE pktType) = nullptr; /* callback function to call when a new packet was received */
+    void (*_rcvCallback)(Packet pkt) = nullptr; /* callback function to call when a new packet was received */
 };
 
 #endif

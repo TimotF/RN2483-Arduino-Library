@@ -454,7 +454,7 @@ bool PktQueueRx::addPacket(Packet pkt)
                 if (_lastPktReceived.getPktNumber() != (pkt.getPktNumber() - 1))
                     debugW("Missing packet !!!");
                 if (_rcvCallback != nullptr)
-                    _rcvCallback(pkt.getData(), pkt.getDataSize(), pkt.getType());
+                    _rcvCallback(pkt);
             }
             else
             {
@@ -463,12 +463,13 @@ bool PktQueueRx::addPacket(Packet pkt)
                 _pktQueue.push_back(pkt);
                 std::vector<Packet>::iterator it = _pktQueue.begin();
                 size_t dataSize = 0;
-                Packet::PACKET_TYPE pktType = it->getType();
                 uint8_t pktNb = it->getPktNumber() - 1;
+                Packet firstPkt = *it;
+
                 for (it = _pktQueue.begin(); it != _pktQueue.end(); ++it)
                 {
                     dataSize += it->getDataSize();
-                    if (it->getType() != pktType)
+                    if (it->getType() != firstPkt.getType())
                     {
                         debugW("met packet type inconsistency when rebuilding split packet...");
                     }
@@ -477,7 +478,7 @@ bool PktQueueRx::addPacket(Packet pkt)
                         debugW("pkt number inconsistency : current nb is %d while last nb is %d", it->getPktNumber(), pktNb);
                     }
 
-                    pktType = it->getType();
+                    firstPkt.setType(it->getType());
                     pktNb = it->getPktNumber();
                 }
                 debugD("total datasize for split packet is %d", dataSize);
@@ -492,8 +493,10 @@ bool PktQueueRx::addPacket(Packet pkt)
                 xSemaphoreGive(_mutex);
                 if (_rcvCallback != nullptr)
                 {
+                    Packet p = Packet(dataIndex, data);
+                    memcpy(p.getHeader(), firstPkt.getHeader(), p.getHeaderSize()); // Copy header into temp pkt
                     debugD("Total retrieved payload : %d bytes", dataIndex);
-                    _rcvCallback(data, dataIndex, pktType);
+                    _rcvCallback(p);
                 }
             }
         }
