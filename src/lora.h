@@ -52,9 +52,11 @@ public:
     int getSNR() { return _snr; }
 
     void attachLed(String gpio) { _loraLedGpio = gpio; }
-    String toggleLed(); 
+    String toggleLed();
     String ledOn();
     String ledOff();
+
+    String getClientsList() { return _loraClients.getClientListAsJSON(); }
 
 private:
     rn2xx3 _lora;              /* lora object to handle communication with lora module */

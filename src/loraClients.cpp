@@ -81,6 +81,11 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
     }
     else /* else, the client is known / msg is broadcast */
     {
+        if(pkt.getQoS()==Packet::AT_LEAST_ONE_PACKET) /* if pkt requires ack */
+        {
+            _txQueue.addACK(pkt); /* Extract metadata from packet and add it to the TX queue */
+        }
+
         setClientLastSeen(pkt.getSourceID(), millis());
         setClientSNR(pkt.getSourceID(), snr);
 

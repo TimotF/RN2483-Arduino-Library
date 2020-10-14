@@ -4,6 +4,8 @@
 #include "Arduino.h"
 #include <hwcrypto/aes.h>
 
+#define MAX_RETRY 2
+
 class Packet
 {
 public:
@@ -152,7 +154,7 @@ private:
     uint32_t _timeout = 0;             /* if no ack received during this time, then the packet is resent */
     uint32_t _sentTimestamp = 0;       /* timestamp of the time that the packet was sent */
     uint8_t _sent = 0;                 /* The number of times the packet was sent */
-    uint8_t _maxRetry = 10;            /* The maximum number of times a packet is sent before dropping it */
+    uint8_t _maxRetry = MAX_RETRY;            /* The maximum number of times a packet is sent before dropping it */
     uint8_t _paddingCount = 0;         /* The number of padded bytes added at the end of the data */
     uint8_t _paddingModule = 16;       /* The packet length should be a multiple of this */
     PRIORITY _priority = PRIORITY_LOW; /* The priority of the packet */
