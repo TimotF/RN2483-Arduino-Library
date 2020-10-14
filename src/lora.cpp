@@ -127,9 +127,8 @@ void LoRa::loop()
         {
             String received = _lora.getRx(); /* get received msg */
             _snr = _lora.getSNR();           /* update SNR */
-            toggleLed();
-            _lora.setPassiveRxP2P(); /* go back into rx mode */
-                                     /* Then, process received msg */
+            _lora.setPassiveRxP2P();         /* go back into rx mode */
+                                             /* Then, process received msg */
             _lastPktReicvTime = millis();
 
             debugV("received msg with snr %d", _snr);
@@ -146,10 +145,15 @@ void LoRa::loop()
                 break;
             }
 
+            debugD("[q=%d][IN][Type=%d][sourceID=%d][destID=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getSourceID(), pkt.getDestID(), pkt.getPktNumber());
+
             _loraClients.newPktFromClient(pkt, _snr);
 
             if (_loraClients.needToSendACK())
+            {
                 _state = GO_TO_TX;
+                debugD("ACK required, going into TX mode");
+            }
 
             break;
         }
@@ -184,17 +188,18 @@ void LoRa::loop()
     }
     case LORA_TX:
     {
+        ledOn();
         _state = GO_TO_TX;
         Packet pkt;
         if (!_loraClients.getNextTXPacket(&pkt))
         {
             debugE("WTF? in TX mode but no packet to send!");
+            ledOff();
             break;
         }
 
-        debugD("[q=%d][OUT][Type=%d][destID=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getDestID(), pkt.getPktNumber());
+        debugD("[q=%d][OUT][Type=%d][sourceID=%d][destID=%d] pkt nb = %d", getNbPktInQueue(), pkt.getType(), pkt.getSourceID(), pkt.getDestID(), pkt.getPktNumber());
 
-        pkt.computeChecksum();
         size_t pktSize = pkt.getPktSize();
         uint8_t pktbuf[pktSize];
         TX_RETURN_TYPE ret = _lora.txBytes(_useCyphering ? pkt.getCyphered(pktbuf, _cypherKey) : pkt.get(), pktSize);
@@ -202,12 +207,18 @@ void LoRa::loop()
         {
         case TX_FAIL:
         {
+            debugE("TX FAIL");
             begin(_sf, _useP2P);
             break;
         }
         case TX_SUCCESS:
         {
             _loraClients.markPktAsSent(pkt);
+            debugD("Pkt marked as sent");
+            if(pkt.getQoS()==Packet::AT_LEAST_ONE_PACKET){
+                debugD("Pkt sent require ACK, going into RX mode");
+                _state = GO_TO_RX;
+            }
             break;
         }
         default:
@@ -215,7 +226,7 @@ void LoRa::loop()
             debugW("WTF! received code %d", ret);
         }
         }
-
+        ledOff();
         break;
     }
     case GO_TO_RX:
@@ -314,6 +325,28 @@ String LoRa::toggleLed()
     {
         _lora.sendRawCommand("sys set pinmode " + _loraLedGpio + " digout");
         _ledState = !_ledState;
+        return _lora.sendRawCommand("sys set pindig " + _loraLedGpio + " " + String(_ledState));
+    }
+    return "FAIL";
+}
+
+String LoRa::ledOn()
+{
+    if (_loraLedGpio.length() > 0)
+    {
+        _lora.sendRawCommand("sys set pinmode " + _loraLedGpio + " digout");
+        _ledState = HIGH;
+        return _lora.sendRawCommand("sys set pindig " + _loraLedGpio + " " + String(_ledState));
+    }
+    return "FAIL";
+}
+
+String LoRa::ledOff()
+{
+    if (_loraLedGpio.length() > 0)
+    {
+        _lora.sendRawCommand("sys set pinmode " + _loraLedGpio + " digout");
+        _ledState = LOW;
         return _lora.sendRawCommand("sys set pindig " + _loraLedGpio + " " + String(_ledState));
     }
     return "FAIL";

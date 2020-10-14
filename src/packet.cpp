@@ -313,6 +313,12 @@ bool PktQueueTx::getNextPacket(Packet *p)
             {
                 if (pkt->getSent() <= pkt->getMaxRetry())
                 {
+                    if (checksum(pkt->get(), pkt->getPktSize()) != 0)
+                    {
+                        debugD("computing pkt checksum");
+                        pkt->computeChecksum();
+                    }
+
                     if (p != nullptr)
                         *p = *pkt; /* pktnb has already been set */
 
@@ -327,6 +333,11 @@ bool PktQueueTx::getNextPacket(Packet *p)
             {
                 if (!pkt->pktNbSet())
                     pkt->setPktNumber(_nextPktNumber[pkt->getDestID()]++); /* set packet number */
+                if (checksum(pkt->get(), pkt->getPktSize()) != 0)
+                {
+                    debugD("computing pkt checksum");
+                    pkt->computeChecksum();
+                }
                 *p = *pkt;
             }
             xSemaphoreGive(_mutex);

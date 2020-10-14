@@ -52,7 +52,9 @@ public:
     int getSNR() { return _snr; }
 
     void attachLed(String gpio) { _loraLedGpio = gpio; }
-    String toggleLed(); /* remove a packet from the packet queue based on its packet number */
+    String toggleLed(); 
+    String ledOn();
+    String ledOff();
 
 private:
     rn2xx3 _lora;              /* lora object to handle communication with lora module */

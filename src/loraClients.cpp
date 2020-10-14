@@ -65,7 +65,7 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
     if (!isClientIDKnown(pkt.getSourceID()) && (pkt.getSourceID() != GATEWAY_ID)) /* if the client is not known */
     {
         debugD("Unknown client ID");
-        if (pkt.getDestID() == _host._clientID)
+        if (_host._clientID == GATEWAY_ID)
         {
             /* we ask for its identification */
             uint8_t idPktPayload[1] = {ID_REQUIRED};
