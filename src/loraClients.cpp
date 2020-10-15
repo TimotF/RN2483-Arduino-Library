@@ -81,7 +81,7 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
     }
     else /* else, the client is known / msg is broadcast */
     {
-        if(pkt.getQoS()==Packet::AT_LEAST_ONE_PACKET) /* if pkt requires ack */
+        if (pkt.getQoS() == Packet::AT_LEAST_ONE_PACKET) /* if pkt requires ack */
         {
             _txQueue.addACK(pkt); /* Extract metadata from packet and add it to the TX queue */
         }
@@ -361,7 +361,7 @@ String LoRaClients::getClientListAsJSON()
         json += it->_clientID;
         json += "\",";
         json += "\"lastSeen\":\"";
-        json += int((millis() - it->_lastSeenTimestamp)/1000);
+        json += int((millis() - it->_lastSeenTimestamp) / 1000);
         json += "\",";
         json += "\"snr\":\"";
         json += it->_snr;
@@ -557,7 +557,7 @@ bool LoRaClients::needToSendACK()
     Packet p;
     if (_txQueue.getNextPacket(&p))
     {
-        if (p.getPriority() == Packet::PRIORITY_HIGHEST)
+        if (p.getType() == Packet::ACK)
         {
             return true;
         }
@@ -568,4 +568,17 @@ bool LoRaClients::needToSendACK()
 uint32_t LoRaClients::getLastSentPktTs()
 {
     return _txQueue.getLastPktSentTime();
+}
+
+bool LoRaClients::IDpktpending()
+{
+    Packet p;
+    if (_txQueue.getNextPacket(&p))
+    {
+        if (p.getType() == Packet::ID)
+        {
+            return true;
+        }
+    }
+    return false;
 }

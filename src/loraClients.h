@@ -71,6 +71,7 @@ public:
     int TXsize() const;                                  /* Returns the number of packets in the queue */
     bool needToSendACK();                                /* returns true if an ACK is waiting for to be sent */
     uint32_t getLastSentPktTs();                         /* get the timestamp of the last sent packet */
+    bool IDpktpending();
 
 private:
     std::vector<LoRaClient> _clients; /* list of known clients */
