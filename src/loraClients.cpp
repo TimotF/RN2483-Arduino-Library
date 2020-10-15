@@ -78,6 +78,22 @@ void LoRaClients::newPktFromClient(Packet pkt, int8_t snr)
             idPkt.setDestID(pkt.getSourceID());
             _txQueue.addPacket(idPkt);
         }
+        else if (pkt.getSourceID() == _host._clientID) /* if we detect that another device uses our ID */
+        {
+            /* reset our ID and request another one */
+            _host._clientID = DEFAULT_ID;
+            _txQueue.clear();
+            uint8_t idPktPayload[7] = {DISCOVER};
+            memcpy(idPktPayload + 1, _host._macAddress, 6);
+            Packet idPkt = Packet(7, idPktPayload);
+            idPkt.setPiority(Packet::PRIORITY_HIGH);
+            idPkt.setType(Packet::ID);
+            idPkt.setQoS(Packet::ONE_PACKET_AT_MOST);
+            idPkt.setProtocolVersion(_host._protocolVersion);
+            idPkt.setSourceID(BROADCAST_ID);
+            idPkt.setDestID(GATEWAY_ID);
+            _txQueue.addPacket(idPkt);
+        }
     }
     else /* else, the client is known / msg is broadcast */
     {
