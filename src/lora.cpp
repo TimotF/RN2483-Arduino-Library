@@ -150,7 +150,7 @@ void LoRa::loop()
             _loraClients.newPktFromClient(pkt, _snr);
 
             if (_loraClients.needToSendACK() ||
-                _loraClients.IDpktpending())
+                (_loraClients.IDpktpending() && pkt.getQoS() == Packet::AT_LEAST_ONE_PACKET))
             {
                 _state = GO_TO_TX;
                 debugD("ACK / ID required, going into TX mode");
